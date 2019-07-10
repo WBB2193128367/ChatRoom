@@ -2,7 +2,7 @@
 
 
 
-int login(int fd)
+void login(char *name, int fd)
 {
     Msg msg;
     int ret;
@@ -22,11 +22,7 @@ int login(int fd)
         msg.cmd = LOGIN;
 
         ret = send(fd, &msg, sizeof(msg), 0);
-        if(ret < 0)
-        {
-            perror("send error");
-            exit(1);
-        }
+        is_send_recv_ok(ret, "send error");
 
         while(1)
         {
@@ -40,31 +36,25 @@ int login(int fd)
             }
 
             ret = send(fd, &msg, sizeof(msg), 0);
-            if(ret < 0)
-            {
-                perror("send error");
-                exit(1);
-            }
+            is_send_recv_ok(ret, "send error");
 
             break;
         }
 
         ret = recv(fd, &msg, sizeof(msg), 0);
-        if(ret < 0)
-        {
-            perror("recv error");
-        }
+        is_send_recv_ok(ret, "recv error");
 
         if(msg.cmd == LOGINOK)
         {
             printf("登陆成功！\n");
-            return LOGINOK;
+            strncpy(name, msg.msg, NAMESIZE);
         }
         else if(msg.cmd == LOGINFAIL)
         {
             printf("登录失败!请重试！\n");
-            return LOGINFAIL;
         }
+
+        break;
     }
 }
 
@@ -92,11 +82,7 @@ void user_reg(int fd)
             msg.cmd = REG;
 
             ret = send(fd, &msg, sizeof(msg), 0);
-            if(ret < 0)
-            {
-                perror("send error");
-                exit(1);
-            }
+            is_send_recv_ok(ret, "send error");
 
             break;
         }
@@ -113,11 +99,7 @@ void user_reg(int fd)
             }
 
             ret = send(fd, &msg, sizeof(msg), 0);
-            if(ret < 0)
-            {
-                perror("send error");
-                exit(1);
-            }
+            is_send_recv_ok(ret, "send error");
 
             break;
         }
@@ -128,12 +110,91 @@ void user_reg(int fd)
     }
 
     ret = recv(fd, &msg, sizeof(msg), 0);
-    if(ret < 0)
-    {
-        perror("recv error");
-        exit(1);
-    }
+    is_send_recv_ok(ret, "recv error");
 
     if(msg.cmd == RETURNID)
         printf("您可用于登陆的id为：%s\n", msg.msg);
+}
+
+
+
+void logout(int fd)
+{
+    int ret;
+    Msg msg;
+
+    msg.cmd = LOGOUT;
+
+    ret = send(fd, &msg, sizeof(msg), 0);
+    is_send_recv_ok(ret, "send error");
+
+    printf("退出成功\n");
+}
+
+
+
+void exit_client(int fd)
+{
+    int ret;
+    Msg msg;
+
+    msg.cmd = EXIT;
+
+    ret = send(fd, &msg, sizeof(msg), 0);
+    is_send_recv_ok(ret, "send error");
+
+    shutdown(fd, SHUT_WR);
+
+    close(fd);
+
+    printf("退出成功\n");
+
+    exit(0);
+}
+
+
+
+void showOnlineFriend(int fd)
+{
+    #if 0
+    Msg msg;
+    int ret;
+
+    msg.cmd = SHOWONLINE;
+
+    ret = send(fd, &msg, sizeof(msg), 0);
+    is_send_recv_ok(ret, "send error");
+
+    Link p, head;
+    p = head = NULL;
+    Link newnode;
+
+    while(1)
+    {
+        create_node(&newnode);
+        ret = recv(fd, newnode, sizeof(Node), 0);
+        is_send_recv_ok(ret, "recv error");
+
+        if(newnode->id == 0)
+        {
+            break;
+        }
+        else if(newnode->id != 0)
+        {
+            if(head == NULL)
+            {
+                head = newnode;
+                head->next = NULL;
+                p = head;
+            }
+            else
+            {
+                (p->next) = newnode;
+                newnode->next = NULL;
+            }
+        }    
+    }
+
+    display_list(head);
+    #endif
 }

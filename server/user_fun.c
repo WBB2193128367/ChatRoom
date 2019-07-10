@@ -1,5 +1,7 @@
 #include "server.h"
 
+Link head = NULL;
+Link newnode;
 
 
 static int max_user_id = 99999;
@@ -42,10 +44,7 @@ void user_reg(Msg *Pmsg, int fd)
     }
 
     ret = recv(fd, &msg, sizeof(msg), 0);
-    if(ret < 0)
-    {
-        perror("recv error");
-    }
+    is_send_recv_ok(ret, "recv error");
 
     strncpy(psw, msg.msg, PSWSIZE);
 
@@ -64,17 +63,22 @@ void user_reg(Msg *Pmsg, int fd)
     msg.cmd = RETURNID;
 
     ret = send(fd, &msg, sizeof(msg), 0);
-    if(ret < 0)
-    {
-        perror("send error");
-    }
+    is_send_recv_ok(ret, "send error");
 }
 
 
 
 static int login_callback(void *para, int columnCount, char **columnValue, char **columnName)
 {
-    *(int *)para = 1;  
+    *(int *)para = 1;
+
+    return 0;
+}
+
+
+static int login_callback_name(void *para, int columnCount, char **columnValue, char **columnName)
+{
+    strcpy((char *)para, columnValue[1]);
 
     return 0;
 }
@@ -85,8 +89,10 @@ int login(Msg * Pmsg, int fd)
     Msg msg = *(Pmsg);
     int id;
     char sql[1024] = {0};
+    create_node(&newnode);
 
     sqlite3 *ppdb;
+    char name[NAMESIZE];
     char psw[PSWSIZE];
     int ret;
     int i_condition_login = 0;
@@ -100,15 +106,18 @@ int login(Msg * Pmsg, int fd)
     }
 
     ret = recv(fd, &msg, sizeof(msg), 0);
-    if(ret < 0)
-    {
-        perror("recv error");
-    }
+    is_send_recv_ok(ret, "recv error");
 
     strncpy(psw, msg.msg, PSWSIZE);
 
-    sprintf(sql, "select * from user where id = '%d' and passwd = '%s';", id,psw);
+    sprintf(sql, "select * from user where id = '%d' and passwd = '%s';", id, psw);
     ret = sqlite3_exec(ppdb, sql, login_callback, &i_condition_login, NULL);
+    if(ret != SQLITE_OK)
+    {
+        printf("select fail : %s\n", sqlite3_errmsg(ppdb));
+    }
+
+    ret = sqlite3_exec(ppdb, sql, login_callback_name, &name, NULL);
     if(ret != SQLITE_OK)
     {
         printf("select fail : %s\n", sqlite3_errmsg(ppdb));
@@ -117,11 +126,18 @@ int login(Msg * Pmsg, int fd)
     if(i_condition_login == 1)
     {
         msg.cmd = LOGINOK;
+        strncpy(msg.msg, name, NAMESIZE);
+
         ret = send(fd, &msg, sizeof(msg), 0);
-        if(ret < 0)
-        {
-            perror("send error");
-        }
+        is_send_recv_ok(ret, "send error");
+
+        newnode->fd = fd;
+        newnode->id = id;
+        strncpy(newnode->name, name, NAMESIZE);
+
+        insert_head(&head, newnode);
+
+        display_list(head);
 
         return LOGINOK;
     }
@@ -129,12 +145,55 @@ int login(Msg * Pmsg, int fd)
     {
         msg.cmd = LOGINFAIL;
         ret = send(fd, &msg, sizeof(msg), 0);
-        if(ret < 0)
-        {
-            perror("send error");
-        }
+        is_send_recv_ok(ret, "send error");
 
         return LOGINFAIL;
     }
     
+}
+
+
+
+void logout(int fd)
+{
+    delete_node(&head, fd);
+
+    printf("用户退出成功\n");
+}
+
+
+
+void exit_client(int fd)
+{
+    close(fd);
+
+    printf("客户端正常退出\n");
+
+    pthread_exit(NULL);
+}
+
+
+
+void showOnlineFriend(int fd)
+{
+    #if 0
+    Link p = head;
+    int ret;
+
+    while(p != NULL)
+    {
+        ret = send(fd, p, sizeof(Node), 0);
+        is_send_recv_ok(ret, "send error");
+
+        p = p->next;
+    }
+
+    Node newnode;
+
+    newnode.id = 0;
+    ret = send(fd, &newnode, sizeof(Node), 0);
+    is_send_recv_ok(ret, "send error");
+
+    display_list(head);
+    #endif
 }

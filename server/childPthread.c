@@ -1,11 +1,6 @@
 #include "server.h"
 
-
-void user_handler(int fd)
-{
-
-}
-
+extern Link head;
 
 void *server_child(void * arg)
 {
@@ -23,40 +18,39 @@ void *server_child(void * arg)
 		memset(&msg, 0, sizeof(msg));
 
 		ret = recv(fd, &msg, sizeof(msg), 0);
-		if(ret < 0)
-		{
-			perror("recv error");
-		}
+		is_send_recv_ok(ret, "recv error");
 
 		if(ret == 0)
 		{
-			printf("客户端%d断开连接\n", fd);
-			pthread_exit(NULL);
+			logout(fd);
+			exit_client(fd);
 		}
-
-    	debug_msg("%s : %d\n", __FILE__, __LINE__);
 
 		switch(msg.cmd)
 		{
 			case REG:
 			{
-
-    			debug_msg("%s : %d\n", __FILE__, __LINE__);
 				user_reg(&msg, fd);
 				break;	
 			}
 			case LOGIN:
 			{
 				ret = login(&msg, fd);
-
-				if(ret == LOGINOK)
-				{
-					user_handler(fd);
-				}
-				else if(ret == LOGINFAIL)
-				{
-					continue;
-				}
+				break;
+			}
+			case LOGOUT:
+			{
+				logout(fd);
+				break;
+			}
+			case EXIT:
+			{
+				exit_client(fd);
+				break;
+			}
+			case SHOWONLINE:
+			{
+				showOnlineFriend(fd);
 				break;
 			}
 		}

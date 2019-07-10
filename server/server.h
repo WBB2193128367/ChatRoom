@@ -11,6 +11,8 @@
 #include <string.h>
 #include <pthread.h>
 #include <sqlite3.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "debug.h"
 
 
@@ -32,11 +34,26 @@ typedef struct message Msg;
 
 #define REG		1000
 #define LOGIN	1001
+#define SHOWONLINE	1002
+#define EXIT 	1003
+#define LOGOUT	1004
 
 
 #define RETURNID	2000
 #define LOGINOK 	2001
 #define LOGINFAIL 	2002
+
+struct list
+{
+	int fd;
+	int id;
+	char name[20];
+
+	struct list *next;
+};
+
+typedef struct list Node;
+typedef struct list * Link;
 
 
 void * server_child(void * arg);
@@ -45,6 +62,17 @@ void handler(int);
 void InitDataBase(void);
 void user_reg(Msg *, int);
 int login(Msg *, int);
+void is_malloc_ok(Link);
+void create_node(Link * newnode);
+void insert_head(Link * head, Link newnode);
+void display_list(Link head);
+void delete_node(Link * head, int fd);
+void showOnlineFriend(int);
+void exit_client(int);
+void logout(int);
+void is_send_recv_ok(int, char*);
+
+
 
 
 #endif
