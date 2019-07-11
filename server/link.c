@@ -1,4 +1,5 @@
 #include "server.h"
+#include "package.h"
 
 
 void is_malloc_ok(Link newnode)
@@ -51,6 +52,46 @@ void display_list(Link head)
 			p = p->next;
 		}
 	}
+}
+
+
+int find_node(Link head, int id)
+{
+	Link p;
+	p = head;
+
+	while(p != NULL)
+	{
+		if(p->id == id)
+		{
+			return ONLINEIN;
+		}
+		
+		p = p->next;
+	}
+
+	return ONLINEOUT;
+}
+
+
+int find_online(Link head, Msg * Pmsg)
+{
+	Link p;
+	p = head;
+
+	while(p != NULL)
+	{
+		if(strncmp(p->name, Pmsg->toname, NAMESIZE) == 0)
+		{
+			Pmsg->fd = p->fd;
+			return ONLINEIN;
+		}
+		
+		p = p->next;
+	}
+
+	return ONLINEOUT;
+		
 }
 
 

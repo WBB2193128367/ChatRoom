@@ -1,4 +1,5 @@
 #include "client.h"
+#include "package.h"
 
 
 void is_malloc_ok(Link newnode)

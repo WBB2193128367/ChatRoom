@@ -1,4 +1,5 @@
 #include "server.h"
+#include "package.h"
 
 int fd[CLIENT_MAX_SIZE];
 pthread_t tid;

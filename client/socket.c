@@ -1,4 +1,5 @@
 #include "client.h"
+#include "package.h"
 
 
 int InitNet(void)
@@ -27,4 +28,25 @@ int InitNet(void)
 	}
 
     return sockfd;
+}
+
+void is_send_recv_ok(int ret, char *str)
+{
+	if(ret < 0)
+	{
+		perror(str);
+	}
+}
+
+void myrecv(int fd, Msg *Pmsg)
+{
+	int ret = recv(fd, Pmsg, sizeof(Msg), 0);
+	is_send_recv_ok(ret, "recv error");
+}
+
+
+void mysend(int fd, Msg *Pmsg)
+{
+	int ret = send(fd, Pmsg, sizeof(Msg), 0);
+	is_send_recv_ok(ret, "send error");
 }

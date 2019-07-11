@@ -1,4 +1,6 @@
 #include "server.h"
+#include "package.h"
+
 
 extern Link head;
 
@@ -17,7 +19,7 @@ void *server_child(void * arg)
 	{
 		memset(&msg, 0, sizeof(msg));
 
-		ret = recv(fd, &msg, sizeof(msg), 0);
+		ret = recv(fd, &msg, sizeof(Msg), 0);
 		is_send_recv_ok(ret, "recv error");
 
 		if(ret == 0)
@@ -35,7 +37,7 @@ void *server_child(void * arg)
 			}
 			case LOGIN:
 			{
-				ret = login(&msg, fd);
+				login(&msg, fd);
 				break;
 			}
 			case LOGOUT:
@@ -46,6 +48,11 @@ void *server_child(void * arg)
 			case EXIT:
 			{
 				exit_client(fd);
+				break;
+			}
+			case CHATTO:
+			{
+				chat_to(&msg, fd);
 				break;
 			}
 			case SHOWONLINE:

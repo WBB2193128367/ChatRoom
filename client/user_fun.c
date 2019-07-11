@@ -1,4 +1,5 @@
 #include "client.h"
+#include "package.h"
 
 
 
@@ -11,48 +12,51 @@ void login(char *name, int fd)
     while(flag == 'y' || flag == 'Y')
     {
         printf("请输入您的ID：\n");
-        scanf("%s", msg.msg);
-
+        scanf("%d", &msg.id);
+/*
         if(strlen(msg.msg) > NAMESIZE)
         {
             printf("您输入的用户名超过了%d个字符, 请重新输入\n", NAMESIZE);
             continue;
         }
-
+*/
         msg.cmd = LOGIN;
-
-        ret = send(fd, &msg, sizeof(msg), 0);
-        is_send_recv_ok(ret, "send error");
 
         while(1)
         {
             printf("请输入密码(不要超过%d个字符)：\n", PSWSIZE);
-            scanf("%s", msg.msg);
+            scanf("%s", msg.passwd);
 
-            if(strlen(msg.msg) > PSWSIZE)
+            if(strlen(msg.passwd) > PSWSIZE)
             {
                 printf("您输入的密码超过了%d个字符, 请重新输入\n", PSWSIZE);
                 continue;
             }
-
-            ret = send(fd, &msg, sizeof(msg), 0);
-            is_send_recv_ok(ret, "send error");
-
             break;
         }
 
-        ret = recv(fd, &msg, sizeof(msg), 0);
-        is_send_recv_ok(ret, "recv error");
+        mysend(fd, &msg);
 
-        if(msg.cmd == LOGINOK)
+        myrecv(fd, &msg);
+
+        if(msg.revert == LOGINOK)
         {
+            system("clear");
             printf("登陆成功！\n");
-            strncpy(name, msg.msg, NAMESIZE);
+            strncpy(name, msg.name, NAMESIZE);
         }
-        else if(msg.cmd == LOGINFAIL)
+        else if(msg.revert == LOGINFAIL)
         {
+            system("clear");
             printf("登录失败!请重试！\n");
         }
+        else if(msg.revert == ONLINEIN)
+        {
+            system("clear");
+            printf("您以在其它地方登陆，你的账号可能被盗用，请尽快修改密码！\n");
+        }
+
+        sleep(2);
 
         break;
     }
@@ -71,9 +75,9 @@ void user_reg(int fd)
         while(1)
         {
             printf("请输入用户名(不要超过%d个字符)：\n", NAMESIZE);
-            scanf("%s", msg.msg);
+            scanf("%s", msg.name);
 
-            if(strlen(msg.msg) > NAMESIZE)
+            if(strlen(msg.name) > NAMESIZE)
             {
                 printf("您输入的用户名超过了%d个字符, 请重新输入\n", NAMESIZE);
                 continue;
@@ -81,25 +85,16 @@ void user_reg(int fd)
 
             msg.cmd = REG;
 
-            ret = send(fd, &msg, sizeof(msg), 0);
-            is_send_recv_ok(ret, "send error");
-
-            break;
-        }
-
-        while(1)
-        {
             printf("请输入密码(不要超过%d个字符)：\n", PSWSIZE);
-            scanf("%s", msg.msg);
+            scanf("%s", msg.passwd);
 
-            if(strlen(msg.msg) > PSWSIZE)
+            if(strlen(msg.passwd) > PSWSIZE)
             {
                 printf("您输入的密码超过了%d个字符, 请重新输入\n", PSWSIZE);
                 continue;
             }
 
-            ret = send(fd, &msg, sizeof(msg), 0);
-            is_send_recv_ok(ret, "send error");
+            mysend(fd, &msg);
 
             break;
         }
@@ -109,11 +104,10 @@ void user_reg(int fd)
         scanf("%c", &flag);
     }
 
-    ret = recv(fd, &msg, sizeof(msg), 0);
-    is_send_recv_ok(ret, "recv error");
+    myrecv(fd, &msg);
 
-    if(msg.cmd == RETURNID)
-        printf("您可用于登陆的id为：%s\n", msg.msg);
+    if(msg.revert == RETURNID)
+        printf("您可用于登陆的id为：%d\n", msg.id);
 }
 
 
@@ -125,8 +119,7 @@ void logout(int fd)
 
     msg.cmd = LOGOUT;
 
-    ret = send(fd, &msg, sizeof(msg), 0);
-    is_send_recv_ok(ret, "send error");
+    mysend(fd, &msg);
 
     printf("退出成功\n");
 }
@@ -140,8 +133,7 @@ void exit_client(int fd)
 
     msg.cmd = EXIT;
 
-    ret = send(fd, &msg, sizeof(msg), 0);
-    is_send_recv_ok(ret, "send error");
+    mysend(fd, &msg);
 
     shutdown(fd, SHUT_WR);
 
@@ -154,47 +146,3 @@ void exit_client(int fd)
 
 
 
-void showOnlineFriend(int fd)
-{
-    #if 0
-    Msg msg;
-    int ret;
-
-    msg.cmd = SHOWONLINE;
-
-    ret = send(fd, &msg, sizeof(msg), 0);
-    is_send_recv_ok(ret, "send error");
-
-    Link p, head;
-    p = head = NULL;
-    Link newnode;
-
-    while(1)
-    {
-        create_node(&newnode);
-        ret = recv(fd, newnode, sizeof(Node), 0);
-        is_send_recv_ok(ret, "recv error");
-
-        if(newnode->id == 0)
-        {
-            break;
-        }
-        else if(newnode->id != 0)
-        {
-            if(head == NULL)
-            {
-                head = newnode;
-                head->next = NULL;
-                p = head;
-            }
-            else
-            {
-                (p->next) = newnode;
-                newnode->next = NULL;
-            }
-        }    
-    }
-
-    display_list(head);
-    #endif
-}

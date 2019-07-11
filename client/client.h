@@ -12,7 +12,7 @@
 #include <pthread.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "debug.h"
+#include <pthread.h>
 
 
 
@@ -26,21 +26,37 @@
 struct message
 {	
 	int cmd;
+	int revert;
+	int id;
+	int fd;
+	char name[NAMESIZE];
+	char toname[NAMESIZE];
+	char passwd[PSWSIZE];
 	char msg[MSG_MAX_SIZE];
 };
-
 typedef struct message Msg;
 
-#define REG		1000
-#define LOGIN	1001
-#define SHOWONLINE	1002
-#define EXIT 	1003
-#define LOGOUT	1004
+enum cmd
+{
+	REG = 1000,
+	LOGIN,
+	SHOWONLINE,
+	EXIT,
+	LOGOUT,
+	CHATTO
+};
 
 
-#define RETURNID	2000
-#define LOGINOK		2001
-#define LOGINFAIL 	2002
+enum revert
+{
+	RETURNID = 2000,
+	LOGINOK,
+	LOGINFAIL,
+	ONLINEIN,
+	ONLINEOUT,
+	CHATOK
+};
+
 
 struct list
 {
@@ -55,19 +71,13 @@ typedef struct list Node;
 typedef struct list * Link;
 
 
-int InitNet(void);
+
 void main_handler(int);
 void user_reg(int);
 void login(char *, int);
-void is_malloc_ok(Link);
-void create_node(Link * newnode);
-void insert_head(Link * head, Link newnode);
-void display_list(Link head);
-void delete_node(Link * head, int cfd);
-void showOnlineFriend(int);
+void process_showOnline(int);
 void exit_client(int);
 void logout(int);
-void is_send_recv_ok(int, char*);
 
 
 #endif

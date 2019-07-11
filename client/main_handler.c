@@ -1,4 +1,5 @@
 #include "client.h"
+#include "package.h"
 
 
 void menu_user()
@@ -50,19 +51,26 @@ void user_handler(char * name, int fd)
     int choice;
     int ret;
 
+    pthread_t tid;
+
+    pthread_create(&tid,NULL,read_test,(void *)(&fd));
+
     menu_func(name);
 
     while(1)
     {
-        
-
         scanf("%d", &choice);
 
         switch(choice)
         {
             case 1:
             {
-                showOnlineFriend(fd);
+                process_showOnline(fd);
+                break;
+            }
+            case 2:
+            {
+                process_chat(fd, name);
                 break;
             }
             case 4:
@@ -111,6 +119,7 @@ void main_handler(int fd)
             case 3:
             {
                 exit_client(fd);
+                break;
             }
             default :
             {

@@ -13,11 +13,10 @@
 #include <sqlite3.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "debug.h"
 
 
 #define CLIENT_MAX_SIZE 100
-#define MSG_MAX_SIZE 	1024
+#define MSG_MAX_SIZE 	800
 #define NAMESIZE    20
 #define PSWSIZE     20
 #define IP 			"192.168.1.165"
@@ -27,21 +26,37 @@
 struct message
 {	
 	int cmd;
+	int revert;
+	int id;
+	int fd;
+	char name[NAMESIZE];
+	char toname[NAMESIZE];
+	char passwd[PSWSIZE];
 	char msg[MSG_MAX_SIZE];
 };
 
 typedef struct message Msg;
 
-#define REG		1000
-#define LOGIN	1001
-#define SHOWONLINE	1002
-#define EXIT 	1003
-#define LOGOUT	1004
+enum cmd
+{
+	REG = 1000,
+	LOGIN,
+	SHOWONLINE,
+	EXIT,
+	LOGOUT,
+	CHATTO
+};
 
 
-#define RETURNID	2000
-#define LOGINOK 	2001
-#define LOGINFAIL 	2002
+enum revert
+{
+	RETURNID = 2000,
+	LOGINOK,
+	LOGINFAIL,
+	ONLINEIN,
+	ONLINEOUT,
+	CHATOK
+};
 
 struct list
 {
@@ -57,20 +72,14 @@ typedef struct list * Link;
 
 
 void * server_child(void * arg);
-int InitNet(void);
 void handler(int);
 void InitDataBase(void);
 void user_reg(Msg *, int);
-int login(Msg *, int);
-void is_malloc_ok(Link);
-void create_node(Link * newnode);
-void insert_head(Link * head, Link newnode);
-void display_list(Link head);
-void delete_node(Link * head, int fd);
+void login(Msg *, int);
 void showOnlineFriend(int);
 void exit_client(int);
 void logout(int);
-void is_send_recv_ok(int, char*);
+void chat_to(Msg *, int);
 
 
 
