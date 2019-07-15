@@ -10,6 +10,8 @@ void *server_child(void * arg)
 	int fd = *((int *)arg);
 	Msg msg;
 	int ret;
+	int id;
+	char name[NAMESIZE];
 
 	pthread_detach(pthread_self());
 
@@ -18,13 +20,16 @@ void *server_child(void * arg)
 	while(1)
 	{
 		memset(&msg, 0, sizeof(msg));
+		msg.fd = fd;
 
 		ret = recv(fd, &msg, sizeof(Msg), 0);
 		is_send_recv_ok(ret, "recv error");
 
 		if(ret == 0)
 		{
-			logout(fd);
+			msg.id = id;
+			strncpy(msg.name, name, NAMESIZE);
+			logout(fd, &msg);
 			exit_client(fd);
 		}
 
@@ -38,11 +43,16 @@ void *server_child(void * arg)
 			case LOGIN:
 			{
 				login(&msg, fd);
+				id = msg.id;
+				strncpy(name, msg.name, NAMESIZE);
+				debug_msg("%s\n", name);
+				//sleep(2);
+				sendall_login(fd, &msg);
 				break;
 			}
 			case LOGOUT:
 			{
-				logout(fd);
+				logout(fd, &msg);
 				break;
 			}
 			case EXIT:
@@ -57,7 +67,28 @@ void *server_child(void * arg)
 			}
 			case SHOWONLINE:
 			{
+				debug_msg("show online\n");
 				showOnlineFriend(fd);
+				break;
+			}
+			case ADDFRIEND:
+			{
+				add_friend(fd, &msg);
+				break;
+			}
+			case RETFRIEND:
+			{
+				ret_friend(fd, &msg);
+				break;
+			}
+			case PASSWD:
+			{
+				passwd(fd, &msg);
+				break;
+			}
+			case CHATALL:
+			{
+				chat_all(fd, &msg);
 				break;
 			}
 		}

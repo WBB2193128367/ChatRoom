@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <sqlite3.h>
 
 
 
@@ -28,12 +29,14 @@ struct message
 	int cmd;
 	int revert;
 	int id;
+	int toid;
 	int fd;
 	char name[NAMESIZE];
 	char toname[NAMESIZE];
 	char passwd[PSWSIZE];
 	char msg[MSG_MAX_SIZE];
 };
+
 typedef struct message Msg;
 
 enum cmd
@@ -43,7 +46,11 @@ enum cmd
 	SHOWONLINE,
 	EXIT,
 	LOGOUT,
-	CHATTO
+	CHATTO,
+	ADDFRIEND,
+	RETFRIEND,
+	PASSWD,
+	CHATALL
 };
 
 
@@ -54,7 +61,14 @@ enum revert
 	LOGINFAIL,
 	ONLINEIN,
 	ONLINEOUT,
-	CHATOK
+	CHATOK,
+	READD,
+	EXIST,
+	NOEXIST,
+	ADDFRIENDOK,
+	RETFRIENDOK,
+	SENDLOGIN,
+	SENDLOGOUT
 };
 
 
@@ -75,9 +89,8 @@ typedef struct list * Link;
 void main_handler(int);
 void user_reg(int);
 void login(char *, int);
-void process_showOnline(int);
 void exit_client(int);
-void logout(int);
+void logout(int, char *);
 
 
 #endif

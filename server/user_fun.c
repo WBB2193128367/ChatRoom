@@ -8,14 +8,17 @@ Link newnode;
 
 void user_reg(Msg *Pmsg, int fd)
 {
-    Msg msg = *(Pmsg);
     int ret;
 
-    int id = reg_db(&msg);
+    int id = reg_db(Pmsg);
 
-    memset(&msg, 0, sizeof(msg));
+    debug_msg("name = %s, passwd = %s\n", Pmsg->name, Pmsg->passwd);
 
-    ret = send(fd, &msg, sizeof(msg), 0);
+    //memset(&msg, 0, sizeof(msg));
+
+    Pmsg->id = id;
+
+    ret = send(fd, Pmsg, sizeof(Msg), 0);
     is_send_recv_ok(ret, "send error");
 }
 
@@ -26,49 +29,113 @@ void user_reg(Msg *Pmsg, int fd)
 
 void login(Msg * Pmsg, int fd)
 {
-    Msg msg = *(Pmsg);
     int id;
     int ret;
 
-    ret = find_node(head, msg.id);
+    ret = find_node(head, Pmsg->id);
 
     if(ret == ONLINEIN)
     {
-        msg.revert = ONLINEIN;
-        mysend(fd, &msg);
+        Pmsg->revert = ONLINEIN;
+        mysend(fd, Pmsg);
 
         return;
     }
     
-    create_node(&newnode);
+    log_db(Pmsg);
 
-    log_db(&msg);
-
-    if(msg.revert == LOGINOK)
-    {
+    if(Pmsg->revert == LOGINOK)
+    {   
+        create_node(&newnode);
         newnode->fd = fd;
-        newnode->id = msg.id;
-        strncpy(newnode->name, msg.name, NAMESIZE);
+        newnode->id = Pmsg->id;
+        strncpy(newnode->name, Pmsg->name, NAMESIZE);
+
+        
 
         insert_head(&head, newnode);
 
         display_list(head);
     }
 
-    mysend(fd, &msg);
+    mysend(fd, Pmsg);
+}
+
+
+void sendall_login(int fd, Msg *Pmsg)
+{
+    Link p, q;
+    int ret;
+
+    p = head;
+    q = NULL;
+
+    while(p != NULL)
+    {
+        if(p->id == Pmsg->id)
+        {
+            q = p;
+            break;
+        }
+        p = p->next;
+    }
+
+    p = head;
+
+    while(p != NULL)
+    {
+        if(p != q)
+        {
+            Pmsg->revert = SENDLOGIN;
+            mysend(p->fd, Pmsg);
+
+            usleep(100);
+
+            ret = send(p->fd, q, sizeof(Node), 0);
+            is_send_recv_ok(ret, "send error");
+        }
+
+        p = p->next;
+    }
 }
 
 
 
-void logout(int fd)
+void logout(int fd, Msg *Pmsg)
 {
-    Msg msg;
+    Link p, q;
+    int ret;
 
-    msg.revert = LOGOUT;
+    p = head;
+    q = NULL;
 
-    mysend(fd, &msg);
+    while(p != NULL)
+    {
+        if(p->id == Pmsg->id)
+        {
+            q = p;
+            break;
+        }
+        p = p->next;
+    }
 
-    delete_node(&head, fd);
+    p = head;
+    while(p != NULL)
+    {
+        if(p != q)
+        {
+            Pmsg->revert = SENDLOGOUT;
+            mysend(p->fd, Pmsg);
+        }
+
+        p = p->next;
+    }
+
+    Pmsg->revert = LOGOUT;
+
+    mysend(fd, Pmsg);
+
+    delete_node(&head, Pmsg);
 
     printf("用户退出成功\n");
 }
@@ -92,6 +159,7 @@ void chat_to(Msg * Pmsg, int fd)
     int ret;
 
     ret = find_online(head, Pmsg);
+        debug_msg("%s : %d\n", __FILE__, __LINE__);
     if(ret == ONLINEIN)
     {
         Pmsg->revert = CHATOK;
@@ -99,11 +167,13 @@ void chat_to(Msg * Pmsg, int fd)
 
         Pmsg->revert = CHATTO;
         mysend(Pmsg->fd, Pmsg);//给目标发送信息
+        debug_msg("%s : %d\n", __FILE__, __LINE__);
     }
     else
     {
         Pmsg->revert = ONLINEOUT;
         mysend(fd, Pmsg);//返回信息
+        debug_msg("%s : %d\n", __FILE__, __LINE__);
     }
 }
 
@@ -112,6 +182,7 @@ void chat_to(Msg * Pmsg, int fd)
 
 void showOnlineFriend(int fd)
 {
+    
     #if 1
     Link p = head;
     int ret;
@@ -121,17 +192,14 @@ void showOnlineFriend(int fd)
 
     mysend(fd, &msg);
     sleep(0.5);
-        debug_msg("%s : %d\n", __FILE__, __LINE__);
 #if 1
     while(p != NULL)
     {
         ret = send(fd, p, sizeof(Node), 0);
         is_send_recv_ok(ret, "send error");
-        debug_msg("%s : %d\n", __FILE__, __LINE__);
 
         p = p->next;
     }
-        debug_msg("%s : %d\n", __FILE__, __LINE__);
 
     Node newnode;
 
@@ -140,4 +208,87 @@ void showOnlineFriend(int fd)
     is_send_recv_ok(ret, "send error");
 #endif
     #endif
+
+    
+}
+
+
+void add_friend(int fd, Msg *Pmsg)
+{
+    int ret;
+
+    find_friend(Pmsg);
+    if(Pmsg->revert == EXIST)
+    {
+        ;
+    }
+    else if(Pmsg->revert == NOEXIST)
+    {
+        find_online(head, Pmsg);
+        if(Pmsg->revert == ONLINEIN)
+        {
+            Pmsg->revert = ADDFRIEND;
+            mysend(Pmsg->fd, Pmsg);
+
+            Pmsg->revert = NOEXIST;
+        }
+    }
+
+    mysend(fd, Pmsg);  
+}
+
+
+void ret_friend(int fd, Msg *Pmsg)
+{
+    //同意
+    {
+        toid_to_toname(Pmsg);
+
+        add_friend_db(Pmsg);
+
+        Pmsg->revert = RETFRIENDOK;
+
+        mysend(fd, Pmsg);
+
+        find_online(head, Pmsg);
+
+        Pmsg->revert = ADDFRIENDOK;
+
+        mysend(Pmsg->fd, Pmsg);
+    }
+
+
+}
+
+
+void passwd(int fd, Msg *Pmsg)
+{
+    updata_passwd(Pmsg);
+    Pmsg->revert = PASSWD;
+    mysend(fd, Pmsg);
+}
+
+
+void chat_all(int fd, Msg *Pmsg)
+{
+    Link p;
+    p = head;
+
+    while(p != NULL)
+    {
+        //printf("%d\n", __LINE__);
+        if(p->fd != fd)
+        {
+            Pmsg->revert = CHATALL;
+            mysend(p->fd, Pmsg);
+        }
+        else
+        {
+            Pmsg->revert = CHATOK;
+            mysend(fd, Pmsg);
+        }
+        
+
+        p = p->next;
+    }
 }

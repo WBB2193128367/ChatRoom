@@ -2,9 +2,12 @@
 #include "package.h"
 
 
+Link head;
+
 
 void login(char *name, int fd)
 {
+    extern int id_global;
     Msg msg;
     int ret;
     char flag = 'y';
@@ -44,6 +47,7 @@ void login(char *name, int fd)
             system("clear");
             printf("登陆成功！\n");
             strncpy(name, msg.name, NAMESIZE);
+            id_global = msg.id;
         }
         else if(msg.revert == LOGINFAIL)
         {
@@ -55,8 +59,6 @@ void login(char *name, int fd)
             system("clear");
             printf("您以在其它地方登陆，你的账号可能被盗用，请尽快修改密码！\n");
         }
-
-        sleep(2);
 
         break;
     }
@@ -98,26 +100,34 @@ void user_reg(int fd)
 
             break;
         }
+        myrecv(fd, &msg);
+
+
+        if(msg.revert == RETURNID)
+            printf("您可用于登陆的id为：%d\n", msg.id);
+        else
+        {
+            debug_msg("revert = %d\n", msg.revert);
+        }
+        
 
         printf("是否继续申请注册，(Y/N)\n");
         getchar();
         scanf("%c", &flag);
     }
-
-    myrecv(fd, &msg);
-
-    if(msg.revert == RETURNID)
-        printf("您可用于登陆的id为：%d\n", msg.id);
 }
 
 
 
-void logout(int fd)
+void logout(int fd, char *name)
 {
+    extern int id_global;
     int ret;
     Msg msg;
 
     msg.cmd = LOGOUT;
+    strncpy(msg.name, name, NAMESIZE);
+    msg.id = id_global;
 
     mysend(fd, &msg);
 

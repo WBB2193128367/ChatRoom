@@ -1,6 +1,9 @@
 #include "client.h"
 #include "package.h"
 
+sqlite3 *db;
+char name_global[NAMESIZE];
+int id_global;
 
 void menu_user()
 {
@@ -37,9 +40,13 @@ void menu_func(char * name)
     "**********                %-20s    **********\n"
     "************************************************************\n"
     "                                                            \n"
-    "***       1 显示在线好友         2 私聊                    ***\n"
+    "***       1 显示在线好友          2 私聊                    ***\n"
     "***                                                      ***\n"
-    "***       3 群聊                4 退出                    ***\n"
+    "***       3 添加好友             4 修改密码                 ***\n"
+    "***                                                      ***\n"
+    "***       5 退出                 6 回应添加对方为好友        ***\n"
+    "***                                                      ***\n"
+    "***       7 群发                                          ***\n"
     "                                                            \n"
     "  ****      Hello, sir!  What can I do for you ?      ****  \n", name);
 
@@ -50,12 +57,21 @@ void user_handler(char * name, int fd)
 {
     int choice;
     int ret;
+    extern Link head;
+    
+    open_db(&db);
+
+    create_user_db(db, name);
 
     pthread_t tid;
 
     pthread_create(&tid,NULL,read_test,(void *)(&fd));
 
+    sleep(2);
+
     menu_func(name);
+
+    process_showOnline(fd);
 
     while(1)
     {
@@ -64,20 +80,41 @@ void user_handler(char * name, int fd)
         switch(choice)
         {
             case 1:
-            {
-                process_showOnline(fd);
-                break;
-            }
+                {
+                    //process_showOnline(fd);
+                    display_list(head);
+                    break;
+                }
             case 2:
-            {
-                process_chat(fd, name);
-                break;
-            }
+                {
+                    process_chat(fd, name);
+                    break;
+                }
+            case 3:
+                {
+                    process_addFriend(fd, name);
+                    break;
+                }
             case 4:
-            {
-                logout(fd);
-                return;
-            }
+                {
+                    process_passwd(fd);
+                    break;
+                }
+            case 5:
+                {
+                    logout(fd, name);
+                    return;
+                }
+            case 6:
+                {
+                    process_retFriend(fd, name);
+                    break;
+                }
+            case 7:
+                {
+                    process_chatall(fd, name);
+                    break;
+                }
             default :
             {
                 printf("请输入正确的操作!\n");
@@ -92,6 +129,7 @@ void main_handler(int fd)
 {
     int choice;
     int ret;
+    char name[NAMESIZE] = {0};
 
     while(1)
     {
@@ -103,7 +141,7 @@ void main_handler(int fd)
         {
             case 1:
             {
-                char name[NAMESIZE] = {0};
+                
                 login(name, fd);
                 if(strlen(name) != 0)
                 {

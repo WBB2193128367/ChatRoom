@@ -6,5 +6,6 @@
 #include "link.h"
 #include "process.h"
 #include "mypthread.h"
+#include "sql.h"
 
 #endif

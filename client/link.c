@@ -2,7 +2,7 @@
 #include "package.h"
 
 
-void is_malloc_ok(Link newnode)
+static void is_malloc_ok(Link newnode)
 {
 	if(newnode == NULL)
 	{
@@ -55,7 +55,7 @@ void display_list(Link head)
 }
 
 
-void delete_node(Link * head, int fd)
+void delete_node(Link * head, Msg * Pmsg)
 {
 	if((*head) == NULL)
 	{
@@ -67,14 +67,14 @@ void delete_node(Link * head, int fd)
 
 	p = q = (*head);
 
-	if((*head)->fd == fd)
+	if((*head)->id == Pmsg->id)
 	{
 		(*head) = (*head)->next;
 		free(p);
 	}
 	else
 	{
-		while(q->fd != fd && q != NULL)
+		while(q->id != Pmsg->id && q != NULL)
 		{
 			p = q;
 			q = q->next;

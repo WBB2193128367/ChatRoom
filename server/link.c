@@ -84,18 +84,19 @@ int find_online(Link head, Msg * Pmsg)
 		if(strncmp(p->name, Pmsg->toname, NAMESIZE) == 0)
 		{
 			Pmsg->fd = p->fd;
+			Pmsg->revert = ONLINEIN;
 			return ONLINEIN;
 		}
 		
 		p = p->next;
 	}
-
+	Pmsg->revert = ONLINEOUT;
 	return ONLINEOUT;
 		
 }
 
 
-void delete_node(Link * head, int fd)
+void delete_node(Link * head, Msg * Pmsg)
 {
 	if((*head) == NULL)
 	{
@@ -107,14 +108,14 @@ void delete_node(Link * head, int fd)
 
 	p = q = (*head);
 
-	if((*head)->fd == fd)
+	if((*head)->id == Pmsg->id)
 	{
 		(*head) = (*head)->next;
 		free(p);
 	}
 	else
 	{
-		while(q->fd != fd && q != NULL)
+		while(q->id != Pmsg->id && q != NULL)
 		{
 			p = q;
 			q = q->next;

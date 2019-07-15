@@ -28,6 +28,7 @@ struct message
 	int cmd;
 	int revert;
 	int id;
+	int toid;
 	int fd;
 	char name[NAMESIZE];
 	char toname[NAMESIZE];
@@ -44,7 +45,11 @@ enum cmd
 	SHOWONLINE,
 	EXIT,
 	LOGOUT,
-	CHATTO
+	CHATTO,
+	ADDFRIEND,
+	RETFRIEND,
+	PASSWD,
+	CHATALL
 };
 
 
@@ -55,7 +60,14 @@ enum revert
 	LOGINFAIL,
 	ONLINEIN,
 	ONLINEOUT,
-	CHATOK
+	CHATOK,
+	READD,
+	EXIST,
+	NOEXIST,
+	ADDFRIENDOK,
+	RETFRIENDOK,
+	SENDLOGIN,
+	SENDLOGOUT
 };
 
 struct list
@@ -76,10 +88,15 @@ void handler(int);
 void InitDataBase(void);
 void user_reg(Msg *, int);
 void login(Msg *, int);
+void sendall_login(int fd, Msg *Pmsg);
 void showOnlineFriend(int);
+void add_friend(int, Msg *);
+void ret_friend(int fd, Msg *Pmsg);
+void passwd(int, Msg *);
 void exit_client(int);
-void logout(int);
+void logout(int, Msg *Pmsg);
 void chat_to(Msg *, int);
+void chat_all(int fd, Msg *Pmsg);
 
 
 
