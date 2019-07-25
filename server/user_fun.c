@@ -10,16 +10,23 @@ void user_reg(Msg *Pmsg, int fd)
 {
     int ret;
 
-    int id = reg_db(Pmsg);
+    is_name_exist(Pmsg);
 
-    debug_msg("name = %s, passwd = %s\n", Pmsg->name, Pmsg->passwd);
+    if(Pmsg->revert == EXIST)
+    {
+        mysend(fd, Pmsg);
+    }
+    else if(Pmsg->revert == NOEXIST)
+    {
+        int id = reg_db(Pmsg);
 
-    //memset(&msg, 0, sizeof(msg));
+        Pmsg->id = id;
+        debug_msg("%s : %d\n", __FILE__, __LINE__);
 
-    Pmsg->id = id;
-
-    ret = send(fd, Pmsg, sizeof(Msg), 0);
-    is_send_recv_ok(ret, "send error");
+        ret = send(fd, Pmsg, sizeof(Msg), 0);
+        is_send_recv_ok(ret, "send error");
+        debug_msg("%s : %d\n", __FILE__, __LINE__);
+    }
 }
 
 

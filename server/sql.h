@@ -1,5 +1,6 @@
 
 void is_sqlite_ok(int ret, sqlite3 *db);
+void is_name_exist(Msg *Pmsg);
 int reg_db(Msg *);
 void log_db(Msg *);
 void updata_passwd(Msg *Pmsg);

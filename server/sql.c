@@ -6,15 +6,52 @@ static int max_group_id = 99999;
 
 void is_sqlite_ok(int ret, sqlite3 *db)
 {
-    if(ret == SQLITE_OK)
-	{
-	    //printf("sqlite %d succse \n",__LINE__);
-	}
-	else
-	{
-		printf("sqlite3_exec11: %s\n", sqlite3_errmsg(db));
-	    //exit(1);
-	}
+    if (ret == SQLITE_OK)
+    {
+        //printf("sqlite %d succse \n",__LINE__);
+    }
+    else
+    {
+        printf("sqlite3_exec11: %s\n", sqlite3_errmsg(db));
+        //exit(1);
+    }
+}
+
+
+/*判断用户名是否重复 */
+void is_name_exist(Msg *Pmsg)
+{
+    sqlite3 *ppdb;
+    int ret;
+
+    ret = sqlite3_open("user_info.db", &ppdb);
+    is_sqlite_ok(ret, ppdb);
+
+    char sql[1024] = {0};
+    sprintf(sql, "select * from user where name = '%s';", Pmsg->name);
+    
+    sqlite3_stmt *stmt = NULL;
+    ret = sqlite3_prepare_v2(ppdb, sql, strlen(sql), &stmt, NULL);
+    is_sqlite_ok(ret, ppdb);
+
+    ret = sqlite3_step(stmt);
+    if (ret == SQLITE_DONE)
+    {
+        sqlite3_finalize(stmt);
+        sqlite3_close(ppdb);
+
+        Pmsg->revert = NOEXIST;
+        return;
+    }
+    else if (ret == SQLITE_ROW)
+    {
+        sqlite3_finalize(stmt);
+        sqlite3_close(ppdb);
+
+        Pmsg->revert = EXIST;
+        return;
+    }
+    
 }
 
 
@@ -22,14 +59,19 @@ static int find_max_user_id(void *para, int columnCount, char **columnValue, cha
 {
 
     debug_msg("%s : %d\n", __FILE__, __LINE__);
-    printf("%s\n", columnValue[0]);
-    max_user_id = atoi(columnValue[0]);
-    
+    //printf("%s\n", columnValue[0]);
+    if (columnValue[0] == NULL)
+    {
+        ;
+    }
+    else
+    {
+        max_user_id = atoi(columnValue[0]);
+    }
 
     return 0;
 }
-
-
+/*用户注册，将用户名密码和ID写入 */
 int reg_db(Msg *Pmsg)
 {
     sqlite3 *ppdb;
@@ -66,17 +108,12 @@ int reg_db(Msg *Pmsg)
     return max_user_id;
 }
 
-
-
-
-
 static int login_callback(void *para, int columnCount, char **columnValue, char **columnName)
 {
     *(int *)para = 1;
 
     return 0;
 }
-
 
 static int login_callback_name(void *para, int columnCount, char **columnValue, char **columnName)
 {
@@ -85,7 +122,7 @@ static int login_callback_name(void *para, int columnCount, char **columnValue, 
     return 0;
 }
 
-void log_db(Msg * Pmsg)
+void log_db(Msg *Pmsg)
 {
     sqlite3 *ppdb;
     int ret;
@@ -102,7 +139,7 @@ void log_db(Msg * Pmsg)
     ret = sqlite3_exec(ppdb, sql, login_callback_name, &(Pmsg->name), NULL);
     is_sqlite_ok(ret, ppdb);
 
-    if(i_condition_login == 1)
+    if (i_condition_login == 1)
     {
         Pmsg->revert = LOGINOK;
     }
@@ -128,13 +165,12 @@ void updata_passwd(Msg *Pmsg)
     id = Pmsg->id;
     strncpy(passwd, Pmsg->passwd, PSWSIZE);
 
-    sprintf(sql, "update user set passwd = '%s' where id = '%d';", passwd, id);  
+    sprintf(sql, "update user set passwd = '%s' where id = '%d';", passwd, id);
     ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
     is_sqlite_ok(ret, ppdb);
 
     sqlite3_close(ppdb);
 }
-
 
 void find_friend(Msg *Pmsg)
 {
@@ -153,7 +189,7 @@ void find_friend(Msg *Pmsg)
     is_sqlite_ok(ret, ppdb);
 
     ret = sqlite3_step(stmt);
-    if (ret == SQLITE_DONE) 
+    if (ret == SQLITE_DONE)
     {
         sqlite3_finalize(stmt);
         sqlite3_close(ppdb);
@@ -161,7 +197,7 @@ void find_friend(Msg *Pmsg)
         Pmsg->revert = NOEXIST;
         return;
     }
-    else if(ret == SQLITE_ROW)
+    else if (ret == SQLITE_ROW)
     {
         sqlite3_finalize(stmt);
         sqlite3_close(ppdb);
@@ -171,17 +207,12 @@ void find_friend(Msg *Pmsg)
     }
 }
 
-
-
-
-
 static int toid_to_toname_callback(void *para, int columnCount, char **columnValue, char **columnName)
 {
     strcpy((char *)para, columnValue[0]);
 
     return 0;
 }
-
 
 void toid_to_toname(Msg *Pmsg)
 {
@@ -193,13 +224,12 @@ void toid_to_toname(Msg *Pmsg)
     ret = sqlite3_open("user_info.db", &ppdb);
     is_sqlite_ok(ret, ppdb);
 
-    sprintf(sql, "select name from user where id = %d;", Pmsg->toid);  
+    sprintf(sql, "select name from user where id = %d;", Pmsg->toid);
     ret = sqlite3_exec(ppdb, sql, toid_to_toname_callback, &(Pmsg->toname), NULL);
     is_sqlite_ok(ret, ppdb);
 
     sqlite3_close(ppdb);
 }
-
 
 void add_friend_db(Msg *Pmsg)
 {
@@ -210,17 +240,16 @@ void add_friend_db(Msg *Pmsg)
     ret = sqlite3_open("friend_info.db", &ppdb);
     is_sqlite_ok(ret, ppdb);
 
-    sprintf(sql, "insert into '%s' (id, name) values ('%d', '%s');", Pmsg->name, Pmsg->toid, Pmsg->toname);//向自己好友表中插入对方id和用户名
+    sprintf(sql, "insert into '%s' (id, name) values ('%d', '%s');", Pmsg->name, Pmsg->toid, Pmsg->toname); //向自己好友表中插入对方id和用户名
     ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
     is_sqlite_ok(ret, ppdb);
 
-    sprintf(sql, "insert into '%s' (id, name) values ('%d', '%s');", Pmsg->toname, Pmsg->id, Pmsg->name);//向对方好友表中插入自己id和用户名
+    sprintf(sql, "insert into '%s' (id, name) values ('%d', '%s');", Pmsg->toname, Pmsg->id, Pmsg->name); //向对方好友表中插入自己id和用户名
     ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
     is_sqlite_ok(ret, ppdb);
 
     sqlite3_close(ppdb);
 }
-
 
 /*个人离线消息 */
 void offline_msg_db(Msg *Pmsg)
@@ -232,13 +261,12 @@ void offline_msg_db(Msg *Pmsg)
     ret = sqlite3_open("user_info.db", &ppdb);
     is_sqlite_ok(ret, ppdb);
 
-    sprintf(sql, "insert into chat_history values ('%s', '%d', '%s', '%d', '%s', '0', '0', NULL);", Pmsg->name, Pmsg->id, Pmsg->toname, Pmsg->toid, Pmsg->msg);//向自己好友表中插入对方id和用户名
+    sprintf(sql, "insert into chat_history values ('%s', '%d', '%s', '%d', '%s', '0', '0', NULL);", Pmsg->name, Pmsg->id, Pmsg->toname, Pmsg->toid, Pmsg->msg); //向自己好友表中插入对方id和用户名
     ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
     is_sqlite_ok(ret, ppdb);
 
     sqlite3_close(ppdb);
 }
-
 
 /*检查用户是否存在 */
 void find_user_db(Msg *Pmsg)
@@ -257,7 +285,7 @@ void find_user_db(Msg *Pmsg)
     is_sqlite_ok(ret, ppdb);
 
     ret = sqlite3_step(stmt);
-    if (ret == SQLITE_DONE) 
+    if (ret == SQLITE_DONE)
     {
         sqlite3_finalize(stmt);
         sqlite3_close(ppdb);
@@ -265,7 +293,7 @@ void find_user_db(Msg *Pmsg)
         Pmsg->revert = NOEXIST;
         return;
     }
-    else if(ret == SQLITE_ROW)
+    else if (ret == SQLITE_ROW)
     {
         const char *toname = sqlite3_column_text(stmt, 1);
         strncpy(Pmsg->toname, toname, NAMESIZE);
@@ -278,14 +306,11 @@ void find_user_db(Msg *Pmsg)
     }
 }
 
-
-
 static int get_offline_callback(void *para, int columnCount, char **columnValue, char **columnName)
 {
     int fd = *((int *)para);
     Msg msg;
     debug_msg("%s : %d\n", __FILE__, __LINE__);
-
 
     strcpy(msg.name, columnValue[0]);
     msg.id = atoi(columnValue[1]);
@@ -293,7 +318,7 @@ static int get_offline_callback(void *para, int columnCount, char **columnValue,
     msg.toid = atoi(columnValue[3]);
     strcpy(msg.msg, columnValue[4]);
 
-    if(atoi(columnValue[6]) == 0)
+    if (atoi(columnValue[6]) == 0)
     {
         msg.group_id = 0;
     }
@@ -302,7 +327,6 @@ static int get_offline_callback(void *para, int columnCount, char **columnValue,
         msg.group_id = atoi(columnValue[6]);
         strcpy(msg.group, columnValue[7]);
     }
-
 
     msg.revert = OFFLINE;
     mysend(fd, &msg);
@@ -321,18 +345,16 @@ void get_offline_db(int fd, Msg *Pmsg)
     ret = sqlite3_open("user_info.db", &ppdb);
     is_sqlite_ok(ret, ppdb);
 
-    sprintf(sql, "select * from chat_history where toid = %d and flag = 0;", Pmsg->id);  
+    sprintf(sql, "select * from chat_history where toid = %d and flag = 0;", Pmsg->id);
     ret = sqlite3_exec(ppdb, sql, get_offline_callback, &fd, NULL);
     is_sqlite_ok(ret, ppdb);
 
-    sprintf(sql, "update chat_history set flag = 1 where toid = %d and flag = 0;", Pmsg->id);  
+    sprintf(sql, "update chat_history set flag = 1 where toid = %d and flag = 0;", Pmsg->id);
     ret = sqlite3_exec(ppdb, sql, get_offline_callback, &fd, NULL);
     is_sqlite_ok(ret, ppdb);
 
     sqlite3_close(ppdb);
 }
-
-
 
 static int find_max_group_id(void *para, int columnCount, char **columnValue, char **columnName)
 {
@@ -340,16 +362,15 @@ static int find_max_group_id(void *para, int columnCount, char **columnValue, ch
     debug_msg("%s : %d\n", __FILE__, __LINE__);
     //printf("%s\n", columnValue[0]);
     debug_msg("%s : %d\n", __FILE__, __LINE__);
-    if(columnValue[0] == NULL)
+    if (columnValue[0] == NULL)
     {
         ;
     }
     else
     {
-        max_user_id = atoi(columnValue[0]);
+        max_group_id = atoi(columnValue[0]);
     }
     debug_msg("%s : %d\n", __FILE__, __LINE__);
-    
 
     return 0;
 }
@@ -373,7 +394,7 @@ void create_group_db(Msg *Pmsg)
     max_group_id++;
 
     //向总群表中添加此群的信息
-    sprintf(sql, "insert into group_list values ('%d', '%s');", max_group_id, Pmsg->group);   
+    sprintf(sql, "insert into group_list values ('%d', '%s');", max_group_id, Pmsg->group);
     ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
     is_sqlite_ok(ret, ppdb);
     debug_msg("%s : %d\n", __FILE__, __LINE__);
@@ -414,7 +435,6 @@ void create_group_db(Msg *Pmsg)
     sqlite3_close(ppdb);
 }
 
-
 static int callback_show_group(void *para, int columnCount, char **columnValue, char **columnName)
 {
     Msg *Pmsg = (Msg *)para;
@@ -441,9 +461,7 @@ void show_group_db(Msg *Pmsg)
     ret = sqlite3_exec(ppdb, sql, callback_show_group, Pmsg, NULL);
     is_sqlite_ok(ret, ppdb);
     debug_msg("%s : %d\n", __FILE__, __LINE__);
-
 }
-
 
 static int callback_check_group_exist(void *para, int columnCount, char **columnValue, char **columnName)
 {
@@ -457,7 +475,6 @@ static int callback_get_group_name(void *para, int columnCount, char **columnVal
     strcpy(Pmsg->group, columnValue[1]);
     return 0;
 }
-
 
 /*加入群聊 */
 void join_group_db(Msg *Pmsg)
@@ -478,7 +495,7 @@ void join_group_db(Msg *Pmsg)
     debug_msg("%s : %d\n", __FILE__, __LINE__);
 
     /*没有此群 */
-    if(flag == 0)
+    if (flag == 0)
     {
         Pmsg->revert = GROUPNOTEXIST;
         mysend(Pmsg->fd, Pmsg);
@@ -514,7 +531,6 @@ void join_group_db(Msg *Pmsg)
     sqlite3_close(ppdb);
 }
 
-
 /*群组离线消息 */
 void offline_group_msg_db(Msg *Pmsg)
 {
@@ -526,14 +542,12 @@ void offline_group_msg_db(Msg *Pmsg)
     is_sqlite_ok(ret, ppdb);
     //debug_msg("Pmsg->name = %s\n", Pmsg->name);
 
-    sprintf(sql, "insert into chat_history values ('%s', '%d', '%s', '%d', '%s', '0', '%d', '%s');", Pmsg->name, Pmsg->id, Pmsg->toname, Pmsg->toid, Pmsg->msg, Pmsg->group_id, Pmsg->group);//向自己好友表中插入对方id和用户名
+    sprintf(sql, "insert into chat_history values ('%s', '%d', '%s', '%d', '%s', '0', '%d', '%s');", Pmsg->name, Pmsg->id, Pmsg->toname, Pmsg->toid, Pmsg->msg, Pmsg->group_id, Pmsg->group); //向自己好友表中插入对方id和用户名
     ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
     is_sqlite_ok(ret, ppdb);
 
     sqlite3_close(ppdb);
 }
-
-
 
 static int chat_group_callback(void *para, int columnCount, char **columnValue, char **columnName)
 {
@@ -547,35 +561,35 @@ static int chat_group_callback(void *para, int columnCount, char **columnValue, 
     debug_msg("%s : %d\n", __FILE__, __LINE__);
     debug_msg("Pmsg->revert = %d\n", Pmsg->revert);
 
-    if(Pmsg->revert == ONLINEIN)
+    if (Pmsg->revert == ONLINEIN)
     {
         Pmsg->revert = CHATOK;
-        mysend(Pmsg->fd, Pmsg);//返回信息
+        mysend(Pmsg->fd, Pmsg); //返回信息
 
         Pmsg->revert = CHATGROUP;
-    debug_msg("%s : %d\n", __FILE__, __LINE__);
-        debug_msg("p->fd = %d;p->name = %s;p->id = %d", p->fd, p->name,p->id);
-        mysend(p->fd, Pmsg);//给目标发送信息
+        debug_msg("%s : %d\n", __FILE__, __LINE__);
+        debug_msg("p->fd = %d;p->name = %s;p->id = %d", p->fd, p->name, p->id);
+        mysend(p->fd, Pmsg); //给目标发送信息
     }
     else
     {
-    debug_msg("%s : %d\n", __FILE__, __LINE__);
+        debug_msg("%s : %d\n", __FILE__, __LINE__);
         Pmsg->revert = ONLINEOUT;
         find_user_db(Pmsg);
-        if(Pmsg->revert == EXIST)
-        {   
-    debug_msg("%s : %d\n", __FILE__, __LINE__);
+        if (Pmsg->revert == EXIST)
+        {
+            debug_msg("%s : %d\n", __FILE__, __LINE__);
             offline_group_msg_db(Pmsg);
             Pmsg->revert = CHATOK;
             mysend(Pmsg->fd, Pmsg);
         }
-        else    //用户不存在
-        {    
-    debug_msg("%s : %d\n", __FILE__, __LINE__);
-            mysend(Pmsg->fd, Pmsg);//返回用户不存在提示
+        else //用户不存在
+        {
+            debug_msg("%s : %d\n", __FILE__, __LINE__);
+            mysend(Pmsg->fd, Pmsg); //返回用户不存在提示
         }
     }
-    
+
     return 0;
 }
 
@@ -598,7 +612,7 @@ void chat_group_db(Msg *Pmsg)
     debug_msg("%s : %d\n", __FILE__, __LINE__);
 
     /*没有此群 */
-    if(flag == 0)
+    if (flag == 0)
     {
         Pmsg->revert = GROUPNOTEXIST;
         mysend(Pmsg->fd, Pmsg);

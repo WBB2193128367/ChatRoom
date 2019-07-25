@@ -7,5 +7,7 @@
 #include "process.h"
 #include "mypthread.h"
 #include "sql.h"
+#include "interface.h"
+#include "get_passwd.h"
 
 #endif

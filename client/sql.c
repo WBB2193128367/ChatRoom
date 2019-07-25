@@ -6,7 +6,7 @@ void is_sqlite(int ret)  //测试数据库
 {
     if(ret == SQLITE_OK)
 	{
-        printf("sqlite %d succse \n",__LINE__);
+        //printf("sqlite %d succse \n",__LINE__);
 	}
 	else
 	{
@@ -20,7 +20,7 @@ void is_sqlite_ok(int ret, sqlite3 *db)
 {
     if(ret == SQLITE_OK)
 	{
-	    printf("sqlite %d succse \n",__LINE__);
+	    //printf("sqlite %d succse \n",__LINE__);
 	}
 	else
 	{
@@ -33,7 +33,10 @@ void is_sqlite_ok(int ret, sqlite3 *db)
 void open_db(sqlite3 **db)
 {
     int ret;
-    ret = sqlite3_open("client.db", db);
+	extern char name_global[NAMESIZE];
+	char db_file_name[NAMESIZE+20];
+	sprintf(db_file_name, "./user_db/%s.db", name_global);
+    ret = sqlite3_open(db_file_name, db);
     is_sqlite(ret);
 }
 
