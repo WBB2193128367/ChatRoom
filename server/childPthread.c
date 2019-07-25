@@ -91,6 +91,36 @@ void *server_child(void * arg)
 				chat_all(fd, &msg);
 				break;
 			}
+			case CAHTTOID:
+			{
+				chat_to_id(fd, &msg);
+				break;
+			}
+			case GETOFFLINE:
+			{
+				get_offline_msg(fd, &msg);
+				break;
+			}
+			case SHOWGROUP:
+			{
+				show_group(fd, &msg);
+				break;
+			}
+			case JOINGROUP:
+			{
+				join_group(fd, &msg);
+				break;
+			}
+			case CREATGROUP:
+			{
+				create_group(fd, &msg);
+				break;
+			}
+			case CHATGROUP:
+			{
+				chat_group(fd, &msg);
+				break;
+			}
 		}
 	}
 }

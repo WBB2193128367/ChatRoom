@@ -45,12 +45,14 @@ void display_list(Link head)
 	}
 	else
 	{
+		printf("\t----在线列表----\n");
 		while(p != NULL)
 		{
-			printf("id : %d  name : %s\n", p->id, p->name);
+			printf("\t--%s (%d)--\n", p->name, p->id);
 
 			p = p->next;
 		}
+		printf("\t---------------\n");
 	}
 }
 

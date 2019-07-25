@@ -35,7 +35,7 @@ void * read_test(void * arg)
                 }
             case CHATTO:
                 {
-                    printf("%s 给你发了: %s\n", msg.name, msg.msg);
+                    printf("%s 给你发了:\n\t%s\n", msg.name, msg.msg);
                     break;
                 }
             case CHATALL:
@@ -45,41 +45,7 @@ void * read_test(void * arg)
                 }
             case SHOWONLINE:
                 {
-                    p = head = NULL;
-                    Link newnode;
-#if 1
-                    while(1)
-                    {
-                        create_node(&newnode);
-
-                        ret = recv(fd, newnode, sizeof(Node), 0);
-                        if(ret < 0)
-                        {
-                            perror("recv error");
-                            exit(1);
-                        }
-
-                        if(newnode->id == 0)
-                        {
-                            break;
-                        }
-                        else if(newnode->id != 0)
-                        {
-                            if(head == NULL)
-                            {
-                                head = newnode;
-                                head->next = NULL;
-                                p = head;
-                            }
-                            else
-                            {
-                                (p->next) = newnode;
-                                newnode->next = NULL;
-                            }
-                        }    
-                    }
-#endif
-                    display_list(head);
+                    read_showOnline(fd);
                     break;
                 }
             case LOGOUT:
@@ -154,9 +120,103 @@ void * read_test(void * arg)
                     delete_node(&head, &msg);
                     break;
                 }
+            case OFFLINE:
+                {
+                    //printf("%s(%d):\n\t%s\n", msg.name, msg.id, msg.msg);
+                    printf_msg(&msg);
+                    break;
+                }
+            case SHOWGROUP:
+                {
+                    read_showGroup(fd, &msg);
+                    break;
+                }
+            case GROUPFAIL:
+                {
+                    printf("群创建失败!\n");
+                    break;
+                }
+            case GROUPOK:
+                {
+                    printf("您的群号为:%d, 群名称为:%s\n", msg.group_id, msg.group);
+                    break;
+                }
+            case JOINSUCCESS:
+                {
+                    printf("加入群聊成功！\n");
+                    break;
+                }
+            case GROUPNOTEXIST:
+                {
+                    printf("群组不存在！\n");
+                    break;
+                }
+            case CHATGROUP:
+                {
+                    printf_msg(&msg);
+                    break;
+                }
             default:
                 printf("错误\n");
                 break;
         }
+    }
+}
+
+
+void read_showOnline(int fd)
+{
+    p = head = NULL;
+    Link newnode;
+    int ret;
+    while(1)
+    {
+        create_node(&newnode);
+
+        ret = recv(fd, newnode, sizeof(Node), 0);
+        if(ret < 0)
+        {
+            perror("recv error");
+            exit(1);
+        }
+
+        if(newnode->id == 0)
+        {
+            break;
+        }
+        else if(newnode->id != 0)
+        {
+            if(head == NULL)
+            {
+                head = newnode;
+                head->next = NULL;
+                p = head;
+            }
+            else
+            {
+                (p->next) = newnode;
+                newnode->next = NULL;
+            }
+        }    
+    }
+    display_list(head);
+}
+
+
+void read_showGroup(int fd, Msg *Pmsg)
+{
+    printf("\t>>>%s (%d)\n", Pmsg->group, Pmsg->group_id);
+}
+
+void printf_msg(Msg *Pmsg)
+{
+    if(Pmsg->group_id != 0)
+    {
+        printf("\t>> %s(%d) %s(%d) : %s\n", Pmsg->group, Pmsg->group_id, Pmsg->name, Pmsg->id, Pmsg->msg);
+        debug_msg("group msg!\n");
+    }
+    else
+    {
+        printf("%s(%d):\n\t%s\n", Pmsg->name, Pmsg->id, Pmsg->msg);
     }
 }

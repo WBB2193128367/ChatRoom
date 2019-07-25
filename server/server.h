@@ -29,8 +29,10 @@ struct message
 	int revert;
 	int id;
 	int toid;
+	int group_id;
 	int fd;
 	char name[NAMESIZE];
+	char group[NAMESIZE];
 	char toname[NAMESIZE];
 	char passwd[PSWSIZE];
 	char msg[MSG_MAX_SIZE];
@@ -49,7 +51,13 @@ enum cmd
 	ADDFRIEND,
 	RETFRIEND,
 	PASSWD,
-	CHATALL
+	CHATALL,
+	CAHTTOID,
+	GETOFFLINE,
+	SHOWGROUP,
+	CREATGROUP,
+	JOINGROUP,
+	CHATGROUP
 };
 
 
@@ -67,7 +75,13 @@ enum revert
 	ADDFRIENDOK,
 	RETFRIENDOK,
 	SENDLOGIN,
-	SENDLOGOUT
+	SENDLOGOUT,
+	OFFLINE,
+	GROUPOK,
+	GROUPFAIL,
+	GROUPEXIST,
+	GROUPNOTEXIST,
+	JOINSUCCESS
 };
 
 struct list
@@ -97,8 +111,12 @@ void exit_client(int);
 void logout(int, Msg *Pmsg);
 void chat_to(Msg *, int);
 void chat_all(int fd, Msg *Pmsg);
-
-
+void chat_to_id(int fd, Msg *Pmsg);
+void get_offline_msg(int fd, Msg *Pmsg);
+void create_group(int fd, Msg *Pmsg);
+void show_group(int fd, Msg *Pmsg);
+void join_group(int fd, Msg *Pmsg);
+void chat_group(int fd, Msg *Pmsg);
 
 
 #endif

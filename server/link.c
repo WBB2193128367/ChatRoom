@@ -96,6 +96,30 @@ int find_online(Link head, Msg * Pmsg)
 }
 
 
+Link find_online_toid(Link head, Msg *Pmsg)
+{
+	Link p;
+	p = head;
+
+	while(p != NULL)
+	{
+		if(strncmp(p->name, Pmsg->toname, NAMESIZE) == 0)
+		{
+			//Pmsg->fd = p->fd;
+			Pmsg->toid = p->id;
+			strcpy(Pmsg->toname, p->name);
+			Pmsg->revert = ONLINEIN;
+			return p;
+		}
+		
+		p = p->next;
+	}
+    debug_msg("%s : %d\n", __FILE__, __LINE__);
+	Pmsg->revert = ONLINEOUT;
+	return NULL;
+}
+
+
 void delete_node(Link * head, Msg * Pmsg)
 {
 	if((*head) == NULL)

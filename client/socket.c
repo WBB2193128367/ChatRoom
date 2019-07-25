@@ -30,11 +30,17 @@ int InitNet(void)
     return sockfd;
 }
 
+
 void is_send_recv_ok(int ret, char *str)
 {
 	if(ret < 0)
 	{
 		perror(str);
+	}
+	if(ret == 0)
+	{
+		printf("服务器出现故障！\n");
+		exit(0);
 	}
 }
 

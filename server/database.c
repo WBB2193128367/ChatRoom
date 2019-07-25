@@ -22,6 +22,22 @@ void InitDataBase(void)
         printf("sqlite3_exec11: %s\n", sqlite3_errmsg(ppdb));
 	    exit(1);
     }
+
+    sprintf(sql, "create table if not exists chat_history (name text, id int, toname text, toid int, msg text, flag int, group_id int, group_name text);");
+    ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
+    if (ret != SQLITE_OK)
+    {
+        printf("sqlite3_exec11: %s\n", sqlite3_errmsg(ppdb));
+	    exit(1);
+    }
+    sqlite3_close(ppdb);
+
+    ret = sqlite3_open("group_info.db", &ppdb); 
+    is_sqlite_ok(ret, ppdb);
+
+    sprintf(sql, "create table if not exists group_list (id unsigned int primary key, name text);");
+    ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
+    is_sqlite_ok(ret, ppdb);
 #if 0
     sprintf(sql, "insert into user values ('%d', '%s', '%s');", 10000, "admin", "123456");
     ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);

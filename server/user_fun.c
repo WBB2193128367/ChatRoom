@@ -172,6 +172,7 @@ void chat_to(Msg * Pmsg, int fd)
     else
     {
         Pmsg->revert = ONLINEOUT;
+        offline_msg_db(Pmsg);
         mysend(fd, Pmsg);//返回信息
         debug_msg("%s : %d\n", __FILE__, __LINE__);
     }
@@ -291,4 +292,87 @@ void chat_all(int fd, Msg *Pmsg)
 
         p = p->next;
     }
+}
+
+
+void chat_to_id(int fd, Msg *Pmsg)
+{
+    int ret;
+
+    ret = find_online(head, Pmsg);
+        debug_msg("%s : %d\n", __FILE__, __LINE__);
+    if(ret == ONLINEIN)
+    {
+        Pmsg->revert = CHATOK;
+        mysend(fd, Pmsg);//返回信息
+
+        Pmsg->revert = CHATTO;
+        mysend(Pmsg->fd, Pmsg);//给目标发送信息
+        debug_msg("%s : %d\n", __FILE__, __LINE__);
+    }
+    else
+    {
+        Pmsg->revert = ONLINEOUT;
+        find_user_db(Pmsg);
+        if(Pmsg->revert == EXIST)
+        {    
+            offline_msg_db(Pmsg);
+            Pmsg->revert = CHATOK;
+            mysend(fd, Pmsg);
+        }
+        else
+        {    
+            mysend(fd, Pmsg);//返回信息
+            debug_msg("%s : %d\n", __FILE__, __LINE__);
+        }
+    }
+}
+
+
+void get_offline_msg(int fd, Msg *Pmsg)
+{
+    printf("get offline msg\n");
+    get_offline_db(fd, Pmsg);
+}
+
+
+void create_group(int fd, Msg *Pmsg)
+{
+    debug_msg("create group\n");
+    create_group_db(Pmsg);
+    if(Pmsg->revert == GROUPOK)
+    {
+        mysend(fd, Pmsg);
+    }
+    else
+    {
+        Pmsg->revert = GROUPFAIL;
+        mysend(fd, Pmsg);
+    }
+}
+
+
+void show_group(int fd, Msg *Pmsg)
+{
+    debug_msg("this is show group!\n");
+    Pmsg->fd = fd;
+
+    show_group_db(Pmsg);
+}
+
+
+void join_group(int fd, Msg *Pmsg)
+{
+    debug_msg("This is join group!\n");
+    Pmsg->fd = fd;
+    join_group_db(Pmsg);
+}
+
+
+/*发送群聊信息 */
+void chat_group(int fd, Msg *Pmsg)
+{
+    debug_msg("This is group chat\n");
+    Pmsg->fd = fd;
+    chat_group_db(Pmsg);
 }
