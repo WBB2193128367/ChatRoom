@@ -32,6 +32,7 @@ struct message
 	int toid;
 	int group_id;
 	int fd;
+	int flag;
 	char name[NAMESIZE];
 	char group[NAMESIZE];
 	char toname[NAMESIZE];
@@ -58,7 +59,10 @@ enum cmd
 	SHOWGROUP,
 	CREATGROUP,
 	JOINGROUP,
-	CHATGROUP
+	CHATGROUP,
+	LOGINNAME,
+	QUITGROUP,
+	SHOWGROUPMEMBER
 };
 
 
@@ -82,7 +86,8 @@ enum revert
 	GROUPFAIL,
 	GROUPEXIST,
 	GROUPNOTEXIST,
-	JOINSUCCESS
+	JOINSUCCESS,
+	QUITOK
 };
 
 
@@ -103,6 +108,7 @@ typedef struct list * Link;
 void main_handler(int);
 void user_reg(int);
 void login(char *, int);
+void login_name(char *name, int fd);
 void exit_client(int);
 void logout(int, char *);
 

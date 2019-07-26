@@ -11,3 +11,5 @@ void process_showGroup(int fd);
 void process_joinGroup(int fd);
 void process_creatGroup(int fd);
 void process_chatGroup(int fd);
+void process_quitGroup(int fd);
+void process_showGroupMember(int fd);

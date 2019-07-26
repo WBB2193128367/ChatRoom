@@ -139,6 +139,7 @@ void process_chattoid(int fd, char *name)
         p = p->next;
     } */
     msg.cmd = CHATTOID;
+        debug_msg("%s: %d >> %d,%s,%d,%s,%s\n", __FILE__, __LINE__, msg.id,msg.name, msg.toid, msg.toname, msg.msg);
 
     mysend(fd, &msg);
 }
@@ -207,6 +208,45 @@ void process_chatGroup(int fd)
     strcpy(msg.name, name_global);
     debug_msg("name_global = %s\n", name_global);
     debug_msg("Pmsg->name = %s\n", msg.name);
+
+    mysend(fd, &msg);
+}
+
+/*
+    功能: 退出群组 
+    参数: fd: 通讯描述符
+    发送信息: msg：id, name, group_id, cmd
+*/
+void process_quitGroup(int fd)
+{
+    Msg msg;
+    msg.cmd = QUITGROUP;
+
+    printf("请输入要退出的群ID\n");
+    scanf("%d", &msg.group_id);
+
+    msg.id = id_global;
+    strcpy(msg.name, name_global);
+    debug_msg("%s:%d\n", __FILE__, __LINE__);
+
+    mysend(fd, &msg);
+}
+
+/*
+    功能：显示群成员
+    参数：fd：通讯描述符
+    发送信息：msg: id, name, group_id, cmd
+ */
+void process_showGroupMember(int fd)
+{
+    Msg msg;
+    msg.cmd = SHOWGROUPMEMBER;
+
+    printf("请输入想获取群成员的群ID\n");
+    scanf("%d", &msg.group_id);
+
+    msg.id = id_global;
+    strcpy(msg.name, name_global);
 
     mysend(fd, &msg);
 }

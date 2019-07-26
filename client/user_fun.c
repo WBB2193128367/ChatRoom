@@ -146,7 +146,54 @@ void login_name(char *name, int fd)
     extern int id_global;
     Msg msg;
     int ret;
-    msg.cmd = LOGIN;
+    msg.cmd = LOGINNAME;
+
+    insert_log();
+	scanf("%s",msg.name);
+	getchar();
+	printf("\033[60C"); 
+    char *passwd;
+	passwd =(char *)get_passwd();
+	printf("\n");
+	strncpy(msg.passwd, passwd, PSWSIZE);
+
+    mysend(fd,&msg);
+    printf("\n");
+	printf("\033[50C");
+    printf("正在登录，请稍等！\n");
+
+    myrecv(fd, &msg);
+
+    if (msg.revert == LOGINOK)
+    {
+        sleep(1);
+        printf("\033[2A");
+        printf("\n");
+        printf("\033[50C");
+        printf("您已登录成功,欢迎您的使用！\n");
+        strncpy(name, msg.name, NAMESIZE);
+        id_global = msg.id;
+    }
+    else if (msg.revert == LOGINFAIL)
+    {
+        //system("clear");
+        //printf("登录失败!请重试！\n");
+        sleep(1);
+        printf("\033[2A");
+        printf("\n");
+        printf("\033[45C");
+        printf("您输入的密码有误或者用户不存在！\n");
+    }
+    else if (msg.revert == ONLINEIN)
+    {
+        //system("clear");
+        //printf("您以在其它地方登陆，你的账号可能被盗用，请尽快修改密码！\n");
+        sleep(1);
+        printf("\033[2A");
+        printf("\n");
+        printf("\033[50C");
+        printf("该用户已经登陆！\n");
+    }
 }
 
 
