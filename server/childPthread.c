@@ -50,6 +50,16 @@ void *server_child(void * arg)
 				sendall_login(fd, &msg);
 				break;
 			}
+			case LOGINNAME:
+			{
+				login_name(&msg, fd);
+				id = msg.id;
+				strncpy(name, msg.name, NAMESIZE);
+				debug_msg("%s\n", name);
+				//sleep(2);
+				sendall_login(fd, &msg);
+				break;
+			}
 			case LOGOUT:
 			{
 				logout(fd, &msg);
@@ -119,6 +129,16 @@ void *server_child(void * arg)
 			case CHATGROUP:
 			{
 				chat_group(fd, &msg);
+				break;
+			}
+			case QUITGROUP:
+			{
+				quit_group(fd, &msg);
+				break;
+			}
+			case SHOWGROUPMEMBER:
+			{
+				show_groupMember(fd, &msg);
 				break;
 			}
 		}

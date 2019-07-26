@@ -151,6 +151,46 @@ void log_db(Msg *Pmsg)
     sqlite3_close(ppdb);
 }
 
+
+static int login_callback_id(void *para, int columnCount, char **columnValue, char **columnName)
+{
+    //strcpy((char *)para, columnValue[1]);
+    *(int *)para = atoi(columnValue[0]);
+
+    return 0;
+}
+
+/*用户名登录 */
+void log_name_db(Msg *Pmsg)
+{
+    sqlite3 *ppdb;
+    int ret;
+    char sql[1024] = {0};
+    int i_condition_login = 0;
+
+    ret = sqlite3_open("user_info.db", &ppdb);
+    is_sqlite_ok(ret, ppdb);
+
+    sprintf(sql, "select * from user where name = '%s' and passwd = '%s';", Pmsg->name, Pmsg->passwd);
+    ret = sqlite3_exec(ppdb, sql, login_callback, &i_condition_login, NULL);
+    is_sqlite_ok(ret, ppdb);
+
+    ret = sqlite3_exec(ppdb, sql, login_callback_id, &(Pmsg->id), NULL);
+    is_sqlite_ok(ret, ppdb);
+
+    if (i_condition_login == 1)
+    {
+        Pmsg->revert = LOGINOK;
+    }
+    else
+    {
+        Pmsg->revert = LOGINFAIL;
+    }
+
+    sqlite3_close(ppdb);
+}
+
+/*修改密码 */
 void updata_passwd(Msg *Pmsg)
 {
     sqlite3 *ppdb;
@@ -171,6 +211,7 @@ void updata_passwd(Msg *Pmsg)
 
     sqlite3_close(ppdb);
 }
+
 
 void find_friend(Msg *Pmsg)
 {
@@ -268,6 +309,24 @@ void offline_msg_db(Msg *Pmsg)
     sqlite3_close(ppdb);
 }
 
+/*个人消息记录 */
+void online_msg_db(Msg *Pmsg)
+{
+    sqlite3 *ppdb;
+    int ret;
+    char sql[1024] = {0};
+
+    ret = sqlite3_open("user_info.db", &ppdb);
+    is_sqlite_ok(ret, ppdb);
+
+    sprintf(sql, "insert into chat_history values ('%s', '%d', '%s', '%d', '%s', '1', '0', NULL);", Pmsg->name, Pmsg->id, Pmsg->toname, Pmsg->toid, Pmsg->msg); //向自己好友表中插入对方id和用户名
+    ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
+    is_sqlite_ok(ret, ppdb);
+
+    sqlite3_close(ppdb);
+}
+
+
 /*检查用户是否存在 */
 void find_user_db(Msg *Pmsg)
 {
@@ -278,7 +337,7 @@ void find_user_db(Msg *Pmsg)
     ret = sqlite3_open("user_info.db", &ppdb);
     is_sqlite_ok(ret, ppdb);
 
-    sprintf(sql, "select * from user where id = %d;", Pmsg->toid);
+    sprintf(sql, "select * from user where id = %d or name = '%s';", Pmsg->toid, Pmsg->toname);
 
     sqlite3_stmt *stmt = NULL;
     ret = sqlite3_prepare_v2(ppdb, sql, strlen(sql), &stmt, NULL);
@@ -295,6 +354,7 @@ void find_user_db(Msg *Pmsg)
     }
     else if (ret == SQLITE_ROW)
     {
+        Pmsg->toid = sqlite3_column_int(stmt, 0);
         const char *toname = sqlite3_column_text(stmt, 1);
         strncpy(Pmsg->toname, toname, NAMESIZE);
 
@@ -443,6 +503,7 @@ static int callback_show_group(void *para, int columnCount, char **columnValue, 
     Pmsg->revert = SHOWGROUP;
 
     mysend(Pmsg->fd, Pmsg);
+    usleep(10);
     return 0;
 }
 
@@ -463,12 +524,55 @@ void show_group_db(Msg *Pmsg)
     debug_msg("%s : %d\n", __FILE__, __LINE__);
 }
 
+
+/*检测群ID合法的回调函数 */
 static int callback_check_group_exist(void *para, int columnCount, char **columnValue, char **columnName)
 {
     *(int *)para = 1;
     return 0;
 }
 
+/*
+    功能：检测此群是否存在
+    参数：Pmsg：group_id
+    传出参数：Pmsg->revert 
+                GROUPNOTEXIST：不存在
+                GROUPEXIST：存在
+ */
+void check_group_exist(Msg *Pmsg)
+{
+    sqlite3 *ppdb;
+    int ret;
+    char sql[1024] = {0};
+    int flag = 0;
+    debug_msg("Pmsg->name = %s\n", Pmsg->name);
+
+    ret = sqlite3_open("group_info.db", &ppdb);
+    is_sqlite_ok(ret, ppdb);
+
+    /*检查有没有此群 */
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, "select * from group_list where id = '%d';", Pmsg->group_id);
+    ret = sqlite3_exec(ppdb, sql, callback_check_group_exist, &flag, NULL);
+    is_sqlite_ok(ret, ppdb);
+    debug_msg("%s : %d\n", __FILE__, __LINE__);
+
+    /*没有此群 */
+    if (flag == 0)
+    {
+        Pmsg->revert = GROUPNOTEXIST;
+        sqlite3_close(ppdb);
+        return;
+    }
+    else
+    {
+        Pmsg->revert == GROUPEXIST;
+        sqlite3_close(ppdb);
+    }
+}
+
+
+/*获取群名称的回调函数 */
 static int callback_get_group_name(void *para, int columnCount, char **columnValue, char **columnName)
 {
     Msg *Pmsg = (Msg *)para;
@@ -488,17 +592,13 @@ void join_group_db(Msg *Pmsg)
     is_sqlite_ok(ret, ppdb);
     debug_msg("%s : %d\n", __FILE__, __LINE__);
 
-    memset(sql, 0, sizeof(sql));
-    sprintf(sql, "select * from group_list where id = '%d';", Pmsg->group_id);
-    ret = sqlite3_exec(ppdb, sql, callback_check_group_exist, &flag, NULL);
-    is_sqlite_ok(ret, ppdb);
-    debug_msg("%s : %d\n", __FILE__, __LINE__);
-
+    check_group_exist(Pmsg);
     /*没有此群 */
-    if (flag == 0)
+    if (Pmsg->revert == GROUPNOTEXIST)
     {
         Pmsg->revert = GROUPNOTEXIST;
         mysend(Pmsg->fd, Pmsg);
+        sqlite3_close(ppdb);
         return;
     }
     /*获取群名称 */
@@ -515,11 +615,13 @@ void join_group_db(Msg *Pmsg)
     debug_msg("%s : %d\n", __FILE__, __LINE__);
 
     /*向用户加入的群表中添加群组信息 */
+    memset(sql, 0, sizeof(sql));
     sprintf(sql, "create table if not exists '%d' (id unsigned int primary key, name text);", Pmsg->id);
     ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
     is_sqlite_ok(ret, ppdb);
     debug_msg("%s : %d\n", __FILE__, __LINE__);
 
+    memset(sql, 0, sizeof(sql));
     sprintf(sql, "insert into '%d' values ('%d', '%s');", Pmsg->id, Pmsg->group_id, Pmsg->group);
     ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
     is_sqlite_ok(ret, ppdb);
@@ -549,6 +651,24 @@ void offline_group_msg_db(Msg *Pmsg)
     sqlite3_close(ppdb);
 }
 
+
+void online_group_msg_db(Msg *Pmsg)
+{
+    sqlite3 *ppdb;
+    int ret;
+    char sql[1024] = {0};
+
+    ret = sqlite3_open("user_info.db", &ppdb);
+    is_sqlite_ok(ret, ppdb);
+    //debug_msg("Pmsg->name = %s\n", Pmsg->name);
+
+    sprintf(sql, "insert into chat_history values ('%s', '%d', '%s', '%d', '%s', '1', '%d', '%s');", Pmsg->name, Pmsg->id, Pmsg->toname, Pmsg->toid, Pmsg->msg, Pmsg->group_id, Pmsg->group); //向自己好友表中插入对方id和用户名
+    ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
+    is_sqlite_ok(ret, ppdb);
+
+    sqlite3_close(ppdb);
+}
+
 static int chat_group_callback(void *para, int columnCount, char **columnValue, char **columnName)
 {
     Msg *Pmsg = (Msg *)para;
@@ -567,6 +687,7 @@ static int chat_group_callback(void *para, int columnCount, char **columnValue, 
         mysend(Pmsg->fd, Pmsg); //返回信息
 
         Pmsg->revert = CHATGROUP;
+        online_group_msg_db(Pmsg);
         debug_msg("%s : %d\n", __FILE__, __LINE__);
         debug_msg("p->fd = %d;p->name = %s;p->id = %d", p->fd, p->name, p->id);
         mysend(p->fd, Pmsg); //给目标发送信息
@@ -605,17 +726,13 @@ void chat_group_db(Msg *Pmsg)
     ret = sqlite3_open("group_info.db", &ppdb);
     is_sqlite_ok(ret, ppdb);
 
-    memset(sql, 0, sizeof(sql));
-    sprintf(sql, "select * from group_list where id = '%d';", Pmsg->group_id);
-    ret = sqlite3_exec(ppdb, sql, callback_check_group_exist, &flag, NULL);
-    is_sqlite_ok(ret, ppdb);
-    debug_msg("%s : %d\n", __FILE__, __LINE__);
-
+    check_group_exist(Pmsg);
     /*没有此群 */
-    if (flag == 0)
+    if (Pmsg->revert == GROUPNOTEXIST)
     {
-        Pmsg->revert = GROUPNOTEXIST;
+        //Pmsg->revert = GROUPNOTEXIST;
         mysend(Pmsg->fd, Pmsg);
+        sqlite3_close(ppdb);
         return;
     }
     /*获取群名称 */
@@ -629,6 +746,97 @@ void chat_group_db(Msg *Pmsg)
     ret = sqlite3_exec(ppdb, sql, chat_group_callback, Pmsg, NULL);
     is_sqlite_ok(ret, ppdb);
     debug_msg("%s : %d\n", __FILE__, __LINE__);
+
+    sqlite3_close(ppdb);
+}
+
+/*
+    功能：先检查此群的合法性，再将用户从指定群组表中删除，同时从用户表中将群组信息删除
+    参数：Pmsg: id, name, group_id
+ */
+void quit_group_db(Msg *Pmsg)
+{
+    sqlite3 *ppdb;
+    int ret;
+    char sql[1024] = {0};
+    int flag = 0;
+    debug_msg("Pmsg->name = %s\n", Pmsg->name);
+
+    ret = sqlite3_open("group_info.db", &ppdb);
+    is_sqlite_ok(ret, ppdb);
+
+    check_group_exist(Pmsg);
+    /*没有此群 */
+    if (Pmsg->revert == GROUPNOTEXIST)
+    {
+        //Pmsg->revert = GROUPNOTEXIST;
+        mysend(Pmsg->fd, Pmsg);
+        sqlite3_close(ppdb);
+        return;
+    }
+
+    /*从群组表中删除用户 */
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, "delete from '%d' where id = '%d';", Pmsg->group_id, Pmsg->id);
+    ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
+    is_sqlite_ok(ret, ppdb);
+    debug_msg("%s : %d\n", __FILE__, __LINE__);
+
+    /*在用户表中删除群组信息 */
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, "delete from '%d' where id = '%d';", Pmsg->id, Pmsg->group_id);
+    ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
+    is_sqlite_ok(ret, ppdb);
+    debug_msg("%s : %d\n", __FILE__, __LINE__);
+
+    sqlite3_close(ppdb);
+}
+
+/*
+    功能：先检测群ID的合法性，再根据群ID查表，返回群成员信息
+    参数：Pmsg：group_id, fd
+    发送：id, name, flag(群职务)
+ */
+static int show_groupMember_callback(void *para, int columnCount, char **columnValue, char **columnName)
+{
+    Msg *Pmsg = (Msg *)para;
+
+    Pmsg->id = atoi(columnValue[0]);
+    strcpy(Pmsg->name, columnValue[1]);
+    Pmsg->flag = atoi(columnValue[3]);
+    Pmsg->revert = SHOWGROUPMEMBER;
+
+    mysend(Pmsg->fd, Pmsg);
+    usleep(10);
+
+    return 0;
+}
+
+void show_groupMember_db(Msg *Pmsg)
+{
+    sqlite3 *ppdb;
+    int ret;
+    char sql[1024] = {0};
+    int flag = 0;
+    debug_msg("Pmsg->name = %s\n", Pmsg->name);
+
+    ret = sqlite3_open("group_info.db", &ppdb);
+    is_sqlite_ok(ret, ppdb);
+
+    check_group_exist(Pmsg);
+    /*没有此群 */
+    if (Pmsg->revert == GROUPNOTEXIST)
+    {
+        //Pmsg->revert = GROUPNOTEXIST;
+        mysend(Pmsg->fd, Pmsg);
+        sqlite3_close(ppdb);
+        return;
+    }
+
+    memset(sql, 0, sizeof(sql));
+    sprintf(sql, "select * from '%d';", Pmsg->group_id);
+    ret = sqlite3_exec(ppdb, sql, show_groupMember_callback, Pmsg, NULL);
+    is_sqlite_ok(ret, ppdb);
 
     sqlite3_close(ppdb);
 }

@@ -55,14 +55,14 @@ void display_list(Link head)
 }
 
 
-int find_node(Link head, int id)
+int find_node(Link head, Msg *Pmsg)
 {
 	Link p;
 	p = head;
 
 	while(p != NULL)
 	{
-		if(p->id == id)
+		if((p->id == Pmsg->id) || (strcmp(p->name, Pmsg->name) == 0))
 		{
 			return ONLINEIN;
 		}
@@ -85,6 +85,7 @@ int find_online(Link head, Msg * Pmsg)
 		{
 			Pmsg->fd = p->fd;
 			Pmsg->revert = ONLINEIN;
+			Pmsg->toid = p->id;
 			return ONLINEIN;
 		}
 		
@@ -103,10 +104,11 @@ Link find_online_toid(Link head, Msg *Pmsg)
 
 	while(p != NULL)
 	{
-		if(strncmp(p->name, Pmsg->toname, NAMESIZE) == 0)
+		//if(strncmp(p->name, Pmsg->toname, NAMESIZE) == 0)
+		if(Pmsg->toid == p->id)
 		{
 			//Pmsg->fd = p->fd;
-			Pmsg->toid = p->id;
+			//Pmsg->toid = p->id;
 			strcpy(Pmsg->toname, p->name);
 			Pmsg->revert = ONLINEIN;
 			return p;

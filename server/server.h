@@ -31,6 +31,7 @@ struct message
 	int toid;
 	int group_id;
 	int fd;
+	int flag;
 	char name[NAMESIZE];
 	char group[NAMESIZE];
 	char toname[NAMESIZE];
@@ -57,7 +58,10 @@ enum cmd
 	SHOWGROUP,
 	CREATGROUP,
 	JOINGROUP,
-	CHATGROUP
+	CHATGROUP,
+	LOGINNAME,
+	QUITGROUP,
+	SHOWGROUPMEMBER
 };
 
 
@@ -81,7 +85,8 @@ enum revert
 	GROUPFAIL,
 	GROUPEXIST,
 	GROUPNOTEXIST,
-	JOINSUCCESS
+	JOINSUCCESS,
+	QUITOK
 };
 
 struct list
@@ -102,6 +107,7 @@ void handler(int);
 void InitDataBase(void);
 void user_reg(Msg *, int);
 void login(Msg *, int);
+void login_name(Msg *Pmsg, int fd);
 void sendall_login(int fd, Msg *Pmsg);
 void showOnlineFriend(int);
 void add_friend(int, Msg *);
@@ -117,6 +123,8 @@ void create_group(int fd, Msg *Pmsg);
 void show_group(int fd, Msg *Pmsg);
 void join_group(int fd, Msg *Pmsg);
 void chat_group(int fd, Msg *Pmsg);
+void quit_group(int fd, Msg *Pmsg);
+void show_groupMember(int  fd, Msg *Pmsg);
 
 
 #endif
