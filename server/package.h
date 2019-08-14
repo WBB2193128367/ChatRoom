@@ -5,5 +5,6 @@
 #include "debug.h"
 #include "socket.h"
 #include "link.h"
+#include "subfun.h"
 
 #endif

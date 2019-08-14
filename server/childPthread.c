@@ -141,6 +141,11 @@ void *server_child(void * arg)
 				show_groupMember(fd, &msg);
 				break;
 			}
+			case SENDFILE:
+			{
+				send_file(fd, &msg);
+				break;
+			}
 		}
 	}
 }

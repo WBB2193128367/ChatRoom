@@ -81,7 +81,7 @@ int find_online(Link head, Msg * Pmsg)
 
 	while(p != NULL)
 	{
-		if(strncmp(p->name, Pmsg->toname, NAMESIZE) == 0)
+		if((strncmp(p->name, Pmsg->toname, NAMESIZE) == 0) || p->id == Pmsg->toid)
 		{
 			Pmsg->fd = p->fd;
 			Pmsg->revert = ONLINEIN;

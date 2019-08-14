@@ -149,6 +149,11 @@ void user_handler(char * name, int fd)
                     menu_func(name);
                     break;
                 }
+            case 11:
+                {
+                    process_sendFile(fd);
+                    break;
+                }
             default :
             {
                 printf("请输入正确的操作!\n");
@@ -205,6 +210,8 @@ void main_handler(int fd)
             default :
             {
                 printf("请输入正确的操作!\n");
+                char c_tmp;
+                while((c_tmp = getchar() != '\n') && c_tmp != EOF);
                 break;
             }
         }

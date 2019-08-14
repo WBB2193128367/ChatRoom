@@ -15,7 +15,7 @@ void process_chat(int fd, char * name)
     scanf("%s", msg.toname);
 
     printf("请输入想要发送的信息\n");
-    scanf("%s", msg.msg);
+    scanf("%[^\n]", msg.msg);
 
     strncpy(msg.name, name, NAMESIZE);
     msg.id = id_global;
@@ -125,7 +125,7 @@ void process_chattoid(int fd, char *name)
     scanf("%d", &msg.toid);
 
     printf("请输入想要发送的信息\n");
-    scanf("%s", msg.msg);
+    scanf("%[^\n]", msg.msg);
 
     strncpy(msg.name, name, NAMESIZE);
     msg.id = id_global;
@@ -202,7 +202,7 @@ void process_chatGroup(int fd)
     scanf("%d", &msg.group_id);
 
     printf("请输入发送的信息:\n");
-    scanf("%s", msg.msg);
+    scanf("%[^\n]", msg.msg);
 
     msg.id = id_global;
     strcpy(msg.name, name_global);
@@ -249,4 +249,68 @@ void process_showGroupMember(int fd)
     strcpy(msg.name, name_global);
 
     mysend(fd, &msg);
+}
+
+
+/*
+    功能：发送文件
+    参数：fd：通讯描述符
+    发送信息：msg：id，name，toname或id，cmd
+ */
+void process_sendFile(int fd)
+{
+    Msg msg;
+    int flag;
+    extern int port;
+    char filename[100];
+    int ret;
+    msg.cmd = SENDFILE;
+    char port_s[6];
+
+    printf("请输入想用ID发送或者用用户名发送（请输入'1'或者'2'）\n");
+    scanf("%d", &flag);
+
+    if(1 == flag)
+    {
+        printf("请输入对方ID\n");
+        scanf("%d", &msg.toid);
+    }
+    else
+    {
+        printf("请输入对方用户名\n");
+        scanf("%s", msg.toname);
+    }
+
+    strcpy(msg.name, name_global);
+    msg.id = id_global;
+
+    mysend(fd, &msg);
+
+    while(port == 0);
+
+    sprintf(port_s, "%d", port);
+
+    printf("请输入要发送的文件名(相对路径或绝对路径)\n");
+    scanf("%s", filename);
+    
+    /*替换文件名中的空格，以便之后用命令行传参 */
+    strrpc(filename, " ", "\\ ");   
+
+    pid_t pid;
+    pid = fork();
+
+    /*主进程 */
+    if(pid > 0)
+    {
+        printf("pid = %d\n", pid);
+    }
+    else if(pid == 0)
+    {
+        ret = execl("./client/client", "./client", port_s, filename, NULL);
+        if(ret == -1)
+        {
+            perror("execl error");
+        }
+    }
+    
 }

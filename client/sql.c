@@ -52,7 +52,7 @@ void insert_retfriend_db(sqlite3 *db, Msg *Pmsg)
 	int ret;
 	char sql[1024];
 
-	sprintf(sql, "insert into %s values('%d', '%s');", Pmsg->name, Pmsg->toid, Pmsg->toname);
+	sprintf(sql, "insert into %s (id, name) values('%d', '%s');", Pmsg->name, Pmsg->toid, Pmsg->toname);
 	ret = sqlite3_exec(db, sql, NULL, NULL, NULL);
 	is_sqlite_ok(ret, db);
 }
@@ -74,6 +74,7 @@ void history_msg_person_db(sqlite3 *db, Msg *Pmsg)
 
 	if (Pmsg->revert == CHATOK)
 	{
+		debug_msg("%s : %d\n", __FILE__, __LINE__);
 		sprintf(sql, "create table if not exists chat_history_%s (id int, name text, toid int, toname text, history_msg text);", Pmsg->toname);
 		ret = sqlite3_exec(db, sql, NULL, NULL, NULL);
 		is_sqlite_ok(ret, db);

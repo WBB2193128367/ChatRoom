@@ -410,7 +410,7 @@ void get_offline_db(int fd, Msg *Pmsg)
     is_sqlite_ok(ret, ppdb);
 
     sprintf(sql, "update chat_history set flag = 1 where toid = %d and flag = 0;", Pmsg->id);
-    ret = sqlite3_exec(ppdb, sql, get_offline_callback, &fd, NULL);
+    ret = sqlite3_exec(ppdb, sql, NULL, NULL, NULL);
     is_sqlite_ok(ret, ppdb);
 
     sqlite3_close(ppdb);

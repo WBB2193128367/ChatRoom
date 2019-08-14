@@ -23,6 +23,10 @@
 #define IP 			"192.168.1.165"
 #define PORT		2222
 
+#define PORT_END	4000
+#define PORT_START	3000
+
+
 
 struct message
 {	
@@ -62,7 +66,8 @@ enum cmd
 	CHATGROUP,
 	LOGINNAME,
 	QUITGROUP,
-	SHOWGROUPMEMBER
+	SHOWGROUPMEMBER,
+	SENDFILE
 };
 
 
@@ -87,7 +92,8 @@ enum revert
 	GROUPEXIST,
 	GROUPNOTEXIST,
 	JOINSUCCESS,
-	QUITOK
+	QUITOK,
+	RETPORT
 };
 
 

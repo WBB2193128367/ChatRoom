@@ -182,7 +182,7 @@ void chat_to(Msg *Pmsg, int fd)
     int ret;
 
     ret = find_online(head, Pmsg);
-    debug_msg("%s : %d\n", __FILE__, __LINE__);
+    Pmsg->group_id = 0;
     if (ret == ONLINEIN)
     {
         Pmsg->revert = CHATOK;
@@ -192,7 +192,6 @@ void chat_to(Msg *Pmsg, int fd)
         Pmsg->revert = CHATTO;
         mysend(Pmsg->fd, Pmsg); //给目标发送信息
         online_msg_db(Pmsg);
-        debug_msg("%s : %d\n", __FILE__, __LINE__);
     }
     else
     {
@@ -202,12 +201,10 @@ void chat_to(Msg *Pmsg, int fd)
             offline_msg_db(Pmsg);
             Pmsg->revert = CHATOK;
             mysend(fd, Pmsg); //返回信息
-            debug_msg("%s : %d\n", __FILE__, __LINE__);
         }
         else
         {
             mysend(fd, Pmsg); //返回信息
-            debug_msg("%s : %d\n", __FILE__, __LINE__);
         }
         
     }
@@ -422,4 +419,36 @@ void show_groupMember(int  fd, Msg *Pmsg)
     debug_msg("This is show group member\n");
     Pmsg->fd = fd;
     show_groupMember_db(Pmsg);
+}
+
+
+void send_file(int fd, Msg *Pmsg)
+{
+    pid_t pid;
+    int port;
+    int ret;
+    char port_s[6] = {0};
+
+    port = get_port();
+
+    Pmsg->flag = port;
+    Pmsg->revert = RETPORT;
+    mysend(fd, Pmsg);
+    sprintf(port_s, "%d", port);
+
+    pid = fork();
+
+    if(pid > 0)
+    {
+        printf("pid = %d\n", pid);
+    }
+    else if(pid == 0)
+    {
+        int ret = execl("./server/server", "./server", port_s, NULL);
+        if(ret == -1)
+        {
+            perror("execl error");
+        }
+    }
+    
 }

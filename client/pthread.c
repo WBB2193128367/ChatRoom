@@ -2,6 +2,7 @@
 #include "package.h"
 
 Link p, head;
+int port = 0;
 
 void *read_test(void *arg)
 {
@@ -16,6 +17,7 @@ void *read_test(void *arg)
 
     while (1)
     {
+        memset(&msg, 0, sizeof(msg));
         myrecv(fd, &msg);
 
         debug_msg("revert = %d\n", msg.revert);
@@ -27,10 +29,12 @@ void *read_test(void *arg)
                 printf("发送成功\n");
                 if (msg.group_id == 0)
                 {
+		debug_msg("%s : %d\n", __FILE__, __LINE__);
                     history_msg_person_db(db, &msg);
                 }
                 else
                 {
+		debug_msg("%s : %d\n", __FILE__, __LINE__);
                     history_msg_group_db(db, &msg);
                 }
 
@@ -172,6 +176,12 @@ void *read_test(void *arg)
             case SHOWGROUPMEMBER:
             {
                 printf_groupMember(&msg);
+                break;
+            }
+            case RETPORT:
+            {  
+                port = msg.flag;
+                printf("port = %d\n", port);
                 break;
             }
             default:

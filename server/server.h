@@ -22,6 +22,9 @@
 #define IP 			"192.168.1.165"
 #define PORT		2222
 
+#define PORT_END	4000
+#define PORT_START	3000
+
 
 struct message
 {	
@@ -61,7 +64,8 @@ enum cmd
 	CHATGROUP,
 	LOGINNAME,
 	QUITGROUP,
-	SHOWGROUPMEMBER
+	SHOWGROUPMEMBER,
+	SENDFILE
 };
 
 
@@ -86,7 +90,8 @@ enum revert
 	GROUPEXIST,
 	GROUPNOTEXIST,
 	JOINSUCCESS,
-	QUITOK
+	QUITOK,
+	RETPORT
 };
 
 struct list
@@ -125,6 +130,8 @@ void join_group(int fd, Msg *Pmsg);
 void chat_group(int fd, Msg *Pmsg);
 void quit_group(int fd, Msg *Pmsg);
 void show_groupMember(int  fd, Msg *Pmsg);
+
+void send_file(int fd, Msg *Pmsg);
 
 
 #endif

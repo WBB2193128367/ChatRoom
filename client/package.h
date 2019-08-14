@@ -9,5 +9,6 @@
 #include "sql.h"
 #include "interface.h"
 #include "get_passwd.h"
+#include "subfun.h"
 
 #endif
